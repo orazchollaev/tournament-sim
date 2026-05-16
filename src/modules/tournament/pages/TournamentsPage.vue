@@ -47,25 +47,29 @@
     <div v-if="store.tournaments.length" class="section-box">
       <h2>Tournaments</h2>
       <div class="section-body" style="padding: 0">
-        <div
-          v-for="t in store.tournaments"
-          :key="t.id"
-          class="t-row"
-          @click="router.push(`/tournaments/${t.id}`)"
-        >
+        <div v-for="t in store.tournaments" :key="t.id" class="t-row">
           <span class="t-name">{{ t.name }}</span>
           <span class="t-meta">{{ t.teamIds.length }} teams</span>
           <span v-if="t.winnerId" class="tag" :style="{ background: winnerColor(t) }">
             🏆 {{ winnerName(t) }}
           </span>
           <span v-else class="t-meta">In progress</span>
-          <button
-            class="danger ml-auto"
-            style="font-size: 11px; padding: 1px 6px"
-            @click.stop="store.remove(t.id)"
-          >
-            Delete
-          </button>
+          <div class="ml-auto flex">
+            <button
+              class="primary ml-auto"
+              style="font-size: 11px; padding: 1px 6px"
+              @click.stop="router.push(`/tournaments/${t.id}`)"
+            >
+              Detail
+            </button>
+            <button
+              class="danger ml-auto"
+              style="font-size: 11px; padding: 1px 6px"
+              @click.stop="store.remove(t.id)"
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -123,13 +127,9 @@ function winnerColor(t: Tournament) {
   gap: 10px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-light);
-  cursor: pointer;
 }
 .t-row:last-child {
   border-bottom: none;
-}
-.t-row:hover {
-  background: #f0f4ff;
 }
 .t-name {
   font-weight: 600;
