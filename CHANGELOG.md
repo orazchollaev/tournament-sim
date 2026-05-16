@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/orazchollaev/tournament-sim/compare/v0.1.3...v0.1.4) (2026-05-16)
+
+### Features
+
+- add details button and remove row click navigation ([dfe5a24](https://github.com/orazchollaev/tournament-sim/commit/dfe5a24bce151943a0e4408a49ae7dd11f7babd6))
+- **simulation:** improve match algorithm (ongoing realism enhancements) ([17adddd](https://github.com/orazchollaev/tournament-sim/commit/17adddd0a63b84c9193fbda78c8493329ed5b291))
+- **ui:** hide number input spin buttons ([db33176](https://github.com/orazchollaev/tournament-sim/commit/db33176c0808d98e663463440c6d79a30a2444a8))
+
 ## [0.1.3](https://github.com/orazchollaev/tournament-sim/compare/v0.1.2...v0.1.3) (2026-05-16)
 
 ### Features
