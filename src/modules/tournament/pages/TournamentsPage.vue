@@ -19,7 +19,7 @@ const {
 
 const editingId = ref<string | null>(null)
 const editName = ref("")
-const pendingSeasonId = ref<string | null>(null)
+const seasonModal = ref<Tournament | null>(null)
 
 function startEdit(t: Tournament) {
   editingId.value = t.id
@@ -31,15 +31,17 @@ function saveEdit(id: string) {
   editingId.value = null
 }
 
-function doNewSeason(t: Tournament, isSeeded: boolean) {
-  pendingSeasonId.value = null
-  const id = store.newSeason(t.id, isSeeded)
+function doNewSeason(isSeeded: boolean) {
+  if (!seasonModal.value) return
+  const id = store.newSeason(seasonModal.value.id, isSeeded)
+  seasonModal.value = null
   if (id) router.push(`/tournaments/${id}`)
 }
 </script>
 
 <template>
   <div class="page">
+    <!-- New Tournament -->
     <div class="section-box">
       <h2>New Tournament</h2>
       <div class="section-body">
@@ -47,91 +49,68 @@ function doNewSeason(t: Tournament, isSeeded: boolean) {
           Add at least 2 teams on the Teams tab first.
         </div>
         <template v-else>
-          <div class="flex" style="margin-bottom: 8px">
+          <div class="form-row">
             <input
               v-model="newName"
               placeholder="Tournament name"
-              style="width: 200px"
+              class="name-input"
               @keyup.enter="createTournament"
             />
+            <div class="radio-row">
+              <label class="radio-opt">
+                <input v-model="seeded" type="radio" :value="false" />
+                Random draw
+              </label>
+              <label class="radio-opt">
+                <input v-model="seeded" type="radio" :value="true" />
+                Seeded
+              </label>
+            </div>
             <button
               class="primary"
               :disabled="!newName.trim() || selected.length < 2"
               @click="createTournament"
             >
-              Create ({{ selected.length }} teams)
+              Create
+              <span class="count-badge">{{ selected.length }}</span>
             </button>
           </div>
-          <div class="flex" style="margin-bottom: 10px; gap: 12px">
-            <label class="radio-opt">
-              <input v-model="seeded" type="radio" :value="false" />
-              Random draw
-            </label>
-            <label class="radio-opt">
-              <input v-model="seeded" type="radio" :value="true" />
-              Seeded (strong–weak)
-            </label>
-          </div>
-          <div class="flex-wrap">
-            <label class="team-check select-all">
+
+          <div class="team-grid">
+            <label class="team-chip chip-all">
               <input type="checkbox" :checked="allSelected" @change="toggleAll" />
-              <span>All</span>
+              All
             </label>
-            <label v-for="team in teamsStore.teams" :key="team.id" class="team-check">
+            <label v-for="team in teamsStore.teams" :key="team.id" class="team-chip">
               <input v-model="selected" type="checkbox" :value="team.id" />
               <span class="dot" :style="{ background: team.color }" />
               {{ team.name }}
-              <span style="color: var(--text-muted)">({{ team.power }})</span>
+              <span class="power">{{ team.power }}</span>
             </label>
           </div>
-          <p
-            v-if="selected.length === 1"
-            style="color: var(--danger); font-size: 12px; margin-top: 6px"
-          >
-            Select at least 2 teams.
-          </p>
+
+          <p v-if="selected.length === 1" class="warn-text">Select at least 2 teams.</p>
         </template>
       </div>
     </div>
 
+    <!-- Tournament list -->
     <div v-if="store.tournaments.length" class="section-box">
       <h2>Tournaments</h2>
-      <div class="section-body" style="padding: 0">
+      <div class="t-list">
         <div v-for="t in store.tournaments" :key="t.id" class="t-row">
           <!-- Rename mode -->
           <template v-if="editingId === t.id">
             <input
               v-model="editName"
-              style="width: 160px"
+              class="rename-input"
               @keyup.enter="saveEdit(t.id)"
               @keyup.escape="editingId = null"
             />
-            <button
-              class="primary"
-              style="font-size: 11px; padding: 1px 8px"
-              @click="saveEdit(t.id)"
-            >
-              Save
-            </button>
-            <button style="font-size: 11px; padding: 1px 8px" @click="editingId = null">
-              Cancel
-            </button>
+            <button class="primary sm" @click="saveEdit(t.id)">Save</button>
+            <button class="sm" @click="editingId = null">Cancel</button>
           </template>
-          <!-- New Season seeding choice -->
-          <template v-else-if="pendingSeasonId === t.id">
-            <span class="t-name">{{ t.name }}</span>
-            <span class="t-season">S{{ t.season }}</span>
-            <span class="t-meta" style="margin-left: auto">Draw:</span>
-            <button style="font-size: 11px; padding: 1px 8px" @click="doNewSeason(t, false)">
-              Random
-            </button>
-            <button style="font-size: 11px; padding: 1px 8px" @click="doNewSeason(t, true)">
-              Seeded
-            </button>
-            <button style="font-size: 11px; padding: 1px 8px" @click="pendingSeasonId = null">
-              Cancel
-            </button>
-          </template>
+
           <!-- Normal row -->
           <template v-else>
             <span class="t-name">{{ t.name }}</span>
@@ -142,47 +121,120 @@ function doNewSeason(t: Tournament, isSeeded: boolean) {
             </span>
             <span v-else class="t-meta">In progress</span>
             <div class="ml-auto flex">
-              <button style="font-size: 11px; padding: 1px 8px" @click.stop="startEdit(t)">
-                Edit
+              <button class="sm" @click.stop="startEdit(t)">Rename</button>
+              <button v-if="t.winnerId" class="primary sm" @click.stop="seasonModal = t">
+                + Season
               </button>
-              <button
-                v-if="t.winnerId"
-                class="primary"
-                style="font-size: 11px; padding: 1px 8px"
-                @click.stop="pendingSeasonId = t.id"
-              >
-                New Season
+              <button class="primary sm" @click.stop="router.push(`/tournaments/${t.id}`)">
+                Open
               </button>
-              <button
-                class="primary"
-                style="font-size: 11px; padding: 1px 8px"
-                @click.stop="router.push(`/tournaments/${t.id}`)"
-              >
-                Detail
-              </button>
-              <button
-                class="danger"
-                style="font-size: 11px; padding: 1px 8px"
-                @click.stop="store.remove(t.id)"
-              >
-                Delete
-              </button>
+              <button class="danger sm" @click.stop="store.remove(t.id)">✕</button>
             </div>
           </template>
         </div>
       </div>
     </div>
 
-    <p
-      v-else-if="teamsStore.teams.length >= 2"
-      style="color: var(--text-muted); margin-top: 8px; font-size: 13px"
-    >
-      No tournaments yet.
-    </p>
+    <p v-else-if="teamsStore.teams.length >= 2" class="empty-text">No tournaments yet.</p>
+
+    <!-- New Season modal -->
+    <div v-if="seasonModal" class="modal-backdrop" @click.self="seasonModal = null">
+      <div class="modal">
+        <div class="modal-header">New Season — {{ seasonModal.name }}</div>
+        <div class="modal-body">
+          <p class="modal-desc">Choose draw type for Season {{ (seasonModal.season ?? 1) + 1 }}</p>
+          <div class="modal-actions">
+            <button class="primary" @click="doNewSeason(false)">Random draw</button>
+            <button class="primary" @click="doNewSeason(true)">Seeded</button>
+            <button @click="seasonModal = null">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* Form row */
+.form-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.name-input {
+  width: 200px;
+}
+.radio-row {
+  display: flex;
+  gap: 12px;
+}
+.radio-opt {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.count-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 0 6px;
+  font-size: 11px;
+  margin-left: 2px;
+}
+
+/* Team selection */
+.team-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.team-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 3px 8px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  border-radius: 2px;
+  user-select: none;
+}
+.team-chip:hover {
+  background: var(--bg);
+}
+.chip-all {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.power {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.warn-text {
+  color: var(--danger);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.empty-text {
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+/* Tournament list */
+.t-list {
+  border-top: 1px solid var(--border-light);
+}
 .t-row {
   display: flex;
   align-items: center;
@@ -208,34 +260,48 @@ function doNewSeason(t: Tournament, isSeeded: boolean) {
   font-size: 12px;
   color: var(--text-muted);
 }
-.team-check {
+.rename-input {
+  width: 160px;
+}
+
+/* Small button variant */
+.sm {
+  font-size: 12px;
+  padding: 2px 8px;
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(32, 33, 34, 0.45);
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 3px 8px;
-  border: 1px solid var(--border-light);
-  background: var(--surface);
-  border-radius: 2px;
+  justify-content: center;
+  z-index: 200;
 }
-.team-check:hover {
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  width: 300px;
+}
+.modal-header {
+  font-family: var(--font);
+  font-size: 16px;
+  border-bottom: 1px solid var(--border-light);
+  padding: 10px 14px;
   background: var(--bg);
 }
-.select-all {
-  font-style: italic;
+.modal-body {
+  padding: 14px;
 }
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.radio-opt {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.modal-desc {
   font-size: 13px;
-  cursor: pointer;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.modal-actions {
+  display: flex;
+  gap: 8px;
 }
 </style>
