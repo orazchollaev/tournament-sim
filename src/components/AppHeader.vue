@@ -62,7 +62,7 @@ nav a {
   text-decoration: none;
 }
 nav a:hover {
-  background: var(--bg);
+  border-bottom-color: var(--border);
 }
 nav a.router-link-active {
   border-bottom-color: var(--accent);
