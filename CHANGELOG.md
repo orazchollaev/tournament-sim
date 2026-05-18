@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.1](https://github.com/orazchollaev/tournament-sim/compare/v0.4.0...v0.4.1) (2026-05-18)
+
+### Features
+
+- add back button in settings page ([eccf4ed](https://github.com/orazchollaev/tournament-sim/commit/eccf4ed27c3d13db150617bf442cb28054af6039))
+- **teams:** add team detail page with match history and form ([40107b9](https://github.com/orazchollaev/tournament-sim/commit/40107b9ae382663025f57c3f3f5afb0ff2401689))
+
+### Chores
+
+- **deps:** update minor dependencies ([dbc7334](https://github.com/orazchollaev/tournament-sim/commit/dbc73342a4080386cab3862626cd849f61a3835a))
+
+### Styles
+
+- restyle winner tag with team-color left border ([28d6709](https://github.com/orazchollaev/tournament-sim/commit/28d67090532a8bb9ab0fc7536bdb1903ffa93dab))
+
 ## [0.4.0](https://github.com/orazchollaev/tournament-sim/compare/v0.3.2...v0.4.0) (2026-05-18)
 
 ### Features
