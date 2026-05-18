@@ -19,6 +19,23 @@ const {
 
 const showSeasonModal = ref(false)
 const showManualSeason = ref(false)
+const showFullBracket = ref(false)
+
+function openFullBracket() {
+  showFullBracket.value = true
+  document.body.style.overflow = "hidden"
+  document.addEventListener("keydown", onFullBracketKey)
+}
+
+function closeFullBracket() {
+  showFullBracket.value = false
+  document.body.style.overflow = ""
+  document.removeEventListener("keydown", onFullBracketKey)
+}
+
+function onFullBracketKey(e: KeyboardEvent) {
+  if (e.key === "Escape") closeFullBracket()
+}
 
 const tournamentTeams = computed(() =>
   allTeams.value.filter((t) => tournament.value?.teamIds.includes(t.id) ?? false)
@@ -70,7 +87,10 @@ function closeSeasonModal() {
       </div>
 
       <div class="section-box">
-        <h2>Bracket</h2>
+        <h2 class="bracket-heading">
+          Bracket
+          <button class="btn-xs" @click="openFullBracket">⛶ Full View</button>
+        </h2>
         <div class="section-body bracket-body">
           <div class="flex sim-toolbar">
             <button @click="store.simulateAll(tournament.id)">🎲 Simulate All</button>
@@ -107,6 +127,28 @@ function closeSeasonModal() {
       </div>
     </template>
 
+    <!-- Full Bracket modal -->
+    <div
+      v-if="showFullBracket"
+      class="modal-backdrop full-bracket-backdrop"
+      @click.self="closeFullBracket"
+    >
+      <div class="full-bracket-modal">
+        <div class="full-bracket-header">
+          <span>{{ tournament?.name }} — Bracket</span>
+          <button class="btn-xs" @click="closeFullBracket">✕ Close</button>
+        </div>
+        <div class="full-bracket-body">
+          <Bracket
+            :tournament="tournament!"
+            :teams="allTeams"
+            @set-result="(ri, mi, h, a) => store.setResult(tournament!.id, ri, mi, h, a)"
+            @sim-match="(ri, mi) => simMatch(ri, mi)"
+          />
+        </div>
+      </div>
+    </div>
+
     <!-- New Season modal -->
     <div v-if="showSeasonModal" class="modal-backdrop" @click.self="closeSeasonModal">
       <div class="modal">
@@ -140,8 +182,40 @@ function closeSeasonModal() {
 .not-found {
   color: var(--text-muted);
 }
+.bracket-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .bracket-body {
   padding: 8px 0;
+}
+.full-bracket-backdrop {
+  z-index: 300;
+}
+.full-bracket-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  width: 96vw;
+  height: 92vh;
+}
+.full-bracket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg);
+  font-family: var(--font);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.full-bracket-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
 }
 .sim-toolbar {
   padding: 0 8px;
