@@ -2,6 +2,7 @@
 import { ref, computed } from "vue"
 import type { Team } from "@/modules/teams/types"
 import type { Tournament } from "@/modules/tournament/types"
+import { getWinnerId } from "@/engine/logic"
 
 const props = defineProps<{ teams: Team[]; tournament: Tournament }>()
 
@@ -39,8 +40,8 @@ const rows = computed<Row[]>(() => {
         const round = props.tournament.rounds[ri]
         for (const match of round.matches) {
           if ((match.homeId === team.id || match.awayId === team.id) && match.result) {
-            const loser = match.result.home > match.result.away ? match.awayId : match.homeId
-            if (loser === team.id) {
+            const winnerId = getWinnerId(match)
+            if (winnerId && winnerId !== team.id) {
               return { team, isWinner: false, eliminatedRound: round.name, eliminatedRoundIdx: ri }
             }
           }

@@ -24,6 +24,8 @@ const allMatches = computed(() => {
     opponentId: string | null
     goalsFor: number
     goalsAgainst: number
+    penGoalsFor: number | null
+    penGoalsAgainst: number | null
     outcome: "W" | "L"
   }[] = []
 
@@ -41,6 +43,13 @@ const allMatches = computed(() => {
         const opponentId = isHome ? match.awayId : match.homeId
         const goalsFor = isHome ? match.result.home : match.result.away
         const goalsAgainst = isHome ? match.result.away : match.result.home
+        const hasPen = match.result.penHome !== undefined
+        const penGoalsFor = hasPen ? (isHome ? match.result.penHome! : match.result.penAway!) : null
+        const penGoalsAgainst = hasPen
+          ? isHome
+            ? match.result.penAway!
+            : match.result.penHome!
+          : null
 
         results.push({
           tournamentName: t.name,
@@ -50,6 +59,8 @@ const allMatches = computed(() => {
           opponentId,
           goalsFor,
           goalsAgainst,
+          penGoalsFor,
+          penGoalsAgainst,
           outcome,
         })
       }
@@ -163,7 +174,7 @@ function getTeamColor(id: string | null) {
               :key="i"
               class="form-bubble"
               :class="m.outcome === 'W' ? 'form-w' : 'form-l'"
-              :title="`${m.outcome} vs ${getTeamName(m.opponentId)} ${m.goalsFor}–${m.goalsAgainst}`"
+              :title="`${m.outcome} vs ${getTeamName(m.opponentId)} ${m.goalsFor}–${m.goalsAgainst}${m.penGoalsFor !== null ? ` (pen. ${m.penGoalsFor}–${m.penGoalsAgainst})` : ''}`"
             >
               {{ m.outcome }}
             </div>
@@ -172,6 +183,10 @@ function getTeamColor(id: string | null) {
           <div class="form-labels">
             <span v-for="(m, i) in recentForm" :key="i" class="form-label">
               {{ m.goalsFor }}–{{ m.goalsAgainst }}
+              <template v-if="m.penGoalsFor !== null">
+                <br />
+                <span class="pen-tag">p.</span>
+              </template>
             </span>
           </div>
         </div>
@@ -199,7 +214,12 @@ function getTeamColor(id: string | null) {
               <span class="outcome-badge" :class="m.outcome === 'W' ? 'badge-w' : 'badge-l'">
                 {{ m.outcome }}
               </span>
-              <span class="match-score">{{ m.goalsFor }}–{{ m.goalsAgainst }}</span>
+              <span class="match-score">
+                {{ m.goalsFor }}–{{ m.goalsAgainst }}
+                <span v-if="m.penGoalsFor !== null" class="pen-suffix">
+                  (p. {{ m.penGoalsFor }}–{{ m.penGoalsAgainst }})
+                </span>
+              </span>
               <span class="vs-label">vs</span>
               <span class="opponent-dot" :style="{ background: getTeamColor(m.opponentId) }" />
               <span class="match-opponent">{{ getTeamName(m.opponentId) }}</span>
@@ -361,9 +381,18 @@ function getTeamColor(id: string | null) {
 .match-score {
   font-family: var(--font);
   font-size: 14px;
-  width: 36px;
   text-align: center;
   flex-shrink: 0;
+}
+.pen-suffix {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.pen-tag {
+  font-size: 9px;
+  color: var(--text-muted);
+  line-height: 1;
 }
 .vs-label {
   font-size: 11px;
