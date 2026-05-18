@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.7](https://github.com/orazchollaev/tournament-sim/compare/v0.1.6...v0.1.7) (2026-05-18)
+
+### Features
+
+- **tournament:** fire team-colored confetti on winner ([604d4dd](https://github.com/orazchollaev/tournament-sim/commit/604d4dd95cc7a9d281f18b3c7b2992fca1b497e7))
+
+### Bug Fixes
+
+- only clear downstream path when overriding a match result ([73492fa](https://github.com/orazchollaev/tournament-sim/commit/73492fa7783fb3a4c655a909522bc30a4da2087c))
+
+### Chores
+
+- extract component logic into composables ([fdd086d](https://github.com/orazchollaev/tournament-sim/commit/fdd086d3e8a3140a86f0a424305ec537dd2a7621))
+
+### Styles
+
+- customize scrollbar appearance ([ff13f61](https://github.com/orazchollaev/tournament-sim/commit/ff13f61cf9858c88fd123c89ef049847852cf092))
+- update header item hover states ([b11777d](https://github.com/orazchollaev/tournament-sim/commit/b11777d86cb713fba69e7d634d43f04e2a75a255))
+
 ## [0.1.6](https://github.com/orazchollaev/tournament-sim/compare/v0.1.5...v0.1.6) (2026-05-18)
 
 ### Features
