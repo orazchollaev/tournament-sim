@@ -40,13 +40,14 @@ export const useTournamentStore = defineStore("tournament", () => {
     t.winnerId = getWinnerId(final)
   }
 
-  function clearDownstream(t: Tournament, fromRound: number, _fromMatch: number) {
+  function clearDownstream(t: Tournament, fromRound: number, fromMatch: number) {
+    let matchIdx = fromMatch
     for (let r = fromRound + 1; r < t.rounds.length; r++) {
-      t.rounds[r].matches.forEach((m) => {
-        m.homeId = null
-        m.awayId = null
-        m.result = null
-      })
+      matchIdx = Math.floor(matchIdx / 2)
+      const m = t.rounds[r].matches[matchIdx]
+      m.homeId = null
+      m.awayId = null
+      m.result = null
     }
   }
 
