@@ -68,7 +68,7 @@ export default tseslint.config(
           argsIgnorePattern: "^_",
         },
       ],
-      "vue/component-tags-order": [
+      "vue/block-order": [
         "error",
         {
           order: ["script", "template", "style"],
