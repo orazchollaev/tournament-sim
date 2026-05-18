@@ -143,7 +143,7 @@ function closeSeasonModal() {
           <span class="t-name">{{ t.name }}</span>
           <span class="t-season">S{{ t.season }}</span>
           <span class="t-meta">{{ t.teamIds.length }} teams</span>
-          <span v-if="t.winnerId" class="tag" :style="{ background: winnerColor(t) }">
+          <span v-if="t.winnerId" class="winner-tag" :style="{ '--team-color': winnerColor(t) }">
             🏆 {{ winnerName(t) }}
           </span>
           <span v-else class="t-meta">In progress</span>
