@@ -12,6 +12,7 @@ const {
   simMatch,
   deleteTournament,
   resetTournament,
+  startNewSeason,
 } = useTournamentDetail()
 </script>
 
@@ -26,7 +27,10 @@ const {
     <template v-else>
       <div class="t-header">
         <RouterLink to="/tournaments" class="back">← Tournaments</RouterLink>
-        <h1>{{ tournament.name }}</h1>
+        <h1>
+          {{ tournament.name }}
+          <span class="t-season">S{{ tournament.season }}</span>
+        </h1>
         <span class="t-meta">{{ tournament.teamIds.length }} teams · Created {{ dateStr }}</span>
       </div>
 
@@ -69,14 +73,12 @@ const {
         </div>
       </div>
 
-      <div class="flex" style="justify-content: flex-end; gap: 12px">
-        <div style="margin-top: 8px; text-align: right">
-          <button class="danger" @click="resetTournament">Reset Tournament</button>
-        </div>
-
-        <div style="margin-top: 8px; text-align: right">
-          <button class="danger" @click="deleteTournament">Delete Tournament</button>
-        </div>
+      <div class="flex" style="justify-content: flex-end; gap: 8px; margin-top: 8px">
+        <button v-if="tournament.winnerId" class="primary" @click="startNewSeason">
+          New Season
+        </button>
+        <button class="danger" @click="resetTournament">Reset</button>
+        <button class="danger" @click="deleteTournament">Delete</button>
       </div>
     </template>
   </div>
@@ -95,6 +97,18 @@ const {
   font-weight: normal;
   font-family: var(--font);
   margin: 6px 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.t-season {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  padding: 1px 6px;
+  font-family: var(--font-ui);
 }
 .t-meta {
   font-size: 12px;

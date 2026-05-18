@@ -15,6 +15,7 @@ export interface Round {
 export interface Tournament {
   id: string
   name: string
+  season: number
   teamIds: string[]
   rounds: Round[]
   winnerId: string | null

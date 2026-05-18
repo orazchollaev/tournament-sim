@@ -41,6 +41,11 @@ export function useTournamentDetail() {
     store.resetResults(route.params.id as string)
   }
 
+  function startNewSeason() {
+    const id = store.newSeason(route.params.id as string)
+    if (id) router.push(`/tournaments/${id}`)
+  }
+
   function fireTeamConfetti(color: string) {
     const end = Date.now() + 2000
 
@@ -86,5 +91,6 @@ export function useTournamentDetail() {
     simMatch,
     deleteTournament,
     resetTournament,
+    startNewSeason,
   }
 }

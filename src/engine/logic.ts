@@ -14,7 +14,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-export function createTournament(name: string, teams: Team[]): Tournament {
+export function createTournament(name: string, teams: Team[], season = 1): Tournament {
   const count = teams.length
   const size = Math.pow(2, Math.ceil(Math.log2(count)))
   const shuffled = shuffle(teams)
@@ -58,6 +58,7 @@ export function createTournament(name: string, teams: Team[]): Tournament {
   return {
     id: uid(),
     name,
+    season,
     teamIds: teams.map((t) => t.id),
     rounds,
     winnerId: null,

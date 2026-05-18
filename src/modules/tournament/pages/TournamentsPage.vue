@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { ref } from "vue"
 import { useCreateTournament } from "../composables/useCreateTournament"
+import type { Tournament } from "../types"
 
 const {
   router,
@@ -13,6 +15,24 @@ const {
   winnerName,
   winnerColor,
 } = useCreateTournament()
+
+const editingId = ref<string | null>(null)
+const editName = ref("")
+
+function startEdit(t: Tournament) {
+  editingId.value = t.id
+  editName.value = t.name
+}
+
+function saveEdit(id: string) {
+  store.rename(id, editName.value)
+  editingId.value = null
+}
+
+function startNewSeason(t: Tournament) {
+  const id = store.newSeason(t.id)
+  if (id) router.push(`/tournaments/${id}`)
+}
 </script>
 
 <template>
@@ -65,28 +85,60 @@ const {
       <h2>Tournaments</h2>
       <div class="section-body" style="padding: 0">
         <div v-for="t in store.tournaments" :key="t.id" class="t-row">
-          <span class="t-name">{{ t.name }}</span>
-          <span class="t-meta">{{ t.teamIds.length }} teams</span>
-          <span v-if="t.winnerId" class="tag" :style="{ background: winnerColor(t) }">
-            🏆 {{ winnerName(t) }}
-          </span>
-          <span v-else class="t-meta">In progress</span>
-          <div class="ml-auto flex">
+          <template v-if="editingId === t.id">
+            <input
+              v-model="editName"
+              style="width: 160px"
+              @keyup.enter="saveEdit(t.id)"
+              @keyup.escape="editingId = null"
+            />
             <button
-              class="primary ml-auto"
-              style="font-size: 11px; padding: 1px 6px"
-              @click.stop="router.push(`/tournaments/${t.id}`)"
+              class="primary"
+              style="font-size: 11px; padding: 1px 8px"
+              @click="saveEdit(t.id)"
             >
-              Detail
+              Save
             </button>
-            <button
-              class="danger ml-auto"
-              style="font-size: 11px; padding: 1px 6px"
-              @click.stop="store.remove(t.id)"
-            >
-              Delete
+            <button style="font-size: 11px; padding: 1px 8px" @click="editingId = null">
+              Cancel
             </button>
-          </div>
+          </template>
+          <template v-else>
+            <span class="t-name">{{ t.name }}</span>
+            <span class="t-season">S{{ t.season }}</span>
+            <span class="t-meta">{{ t.teamIds.length }} teams</span>
+            <span v-if="t.winnerId" class="tag" :style="{ background: winnerColor(t) }">
+              🏆 {{ winnerName(t) }}
+            </span>
+            <span v-else class="t-meta">In progress</span>
+            <div class="ml-auto flex">
+              <button style="font-size: 11px; padding: 1px 8px" @click.stop="startEdit(t)">
+                Edit
+              </button>
+              <button
+                v-if="t.winnerId"
+                class="primary"
+                style="font-size: 11px; padding: 1px 8px"
+                @click.stop="startNewSeason(t)"
+              >
+                New Season
+              </button>
+              <button
+                class="primary"
+                style="font-size: 11px; padding: 1px 8px"
+                @click.stop="router.push(`/tournaments/${t.id}`)"
+              >
+                Detail
+              </button>
+              <button
+                class="danger"
+                style="font-size: 11px; padding: 1px 8px"
+                @click.stop="store.remove(t.id)"
+              >
+                Delete
+              </button>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -104,7 +156,7 @@ const {
 .t-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-light);
 }
@@ -113,6 +165,14 @@ const {
 }
 .t-name {
   font-weight: 600;
+}
+.t-season {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  padding: 1px 5px;
 }
 .t-meta {
   font-size: 12px;

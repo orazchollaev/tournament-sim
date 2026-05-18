@@ -15,10 +15,35 @@ export const useTournamentStore = defineStore("tournament", () => {
   function create(name: string, teamIds: string[]) {
     const allTeams = getTeams()
     const selected = allTeams.filter((t) => teamIds.includes(t.id))
-    const t = createTournament(name, selected)
+    const season =
+      tournaments.value
+        .filter((t) => t.name === name)
+        .reduce((max, t) => Math.max(max, t.season), 0) + 1
+    const t = createTournament(name, selected, season)
     tournaments.value.push(t)
     active.value = t.id
     return t.id
+  }
+
+  function rename(id: string, newName: string) {
+    const t = tournaments.value.find((t) => t.id === id)
+    if (!t || !newName.trim()) return
+    t.name = newName.trim()
+  }
+
+  function newSeason(id: string): string | undefined {
+    const t = tournaments.value.find((t) => t.id === id)
+    if (!t || !t.winnerId) return
+    const allTeams = getTeams()
+    const selected = allTeams.filter((tm) => t.teamIds.includes(tm.id))
+    const season =
+      tournaments.value
+        .filter((tr) => tr.name === t.name)
+        .reduce((max, tr) => Math.max(max, tr.season), 0) + 1
+    const newT = createTournament(t.name, selected, season)
+    tournaments.value.push(newT)
+    active.value = newT.id
+    return newT.id
   }
 
   function setResult(
@@ -120,6 +145,8 @@ export const useTournamentStore = defineStore("tournament", () => {
     tournaments,
     active,
     create,
+    rename,
+    newSeason,
     setResult,
     simulateAll,
     simulateRound,
