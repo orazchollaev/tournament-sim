@@ -1,21 +1,66 @@
 <script setup lang="ts">
 import { useSettingsStore } from "../store"
 import type { Theme } from "../store"
+import { useTeamsStore } from "../../teams/store"
+import { useTournamentStore } from "../../tournament/store"
+import { version } from "../../../../package.json"
 
 const settings = useSettingsStore()
+const teamsStore = useTeamsStore()
+const tournamentStore = useTournamentStore()
 
 const themes: { value: Theme; label: string }[] = [
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
 ]
 
+const DATA_KEYS = ["teams", "tournament"] as const
+
 function clearData() {
   const isConfirm = confirm("Are you sure you want to clear all data? This cannot be undone.")
   if (isConfirm) {
-    localStorage.removeItem("teams")
-    localStorage.removeItem("tournament")
+    DATA_KEYS.forEach((k) => localStorage.removeItem(k))
     location.reload()
   }
+}
+
+function exportData() {
+  const payload = {
+    teams: { teams: teamsStore.teams },
+    tournament: { tournaments: tournamentStore.tournaments, active: tournamentStore.active },
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `tournament-sim-v${version}-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function importData() {
+  const input = document.createElement("input")
+  input.type = "file"
+  input.accept = ".json,application/json"
+  input.onchange = () => {
+    const file = input.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target?.result as string)
+        if (typeof parsed !== "object" || parsed === null) throw new Error()
+        DATA_KEYS.forEach((k) => {
+          if (k in parsed) localStorage.setItem(k, JSON.stringify(parsed[k]))
+        })
+        location.reload()
+      } catch {
+        alert("Invalid backup file.")
+      }
+    }
+    reader.readAsText(file)
+  }
+  input.click()
 }
 </script>
 
@@ -42,7 +87,11 @@ function clearData() {
 
         <div class="setting-row">
           <span class="setting-label">Data</span>
-          <button class="danger" @click="clearData">Clear all data</button>
+          <div class="btn-group">
+            <button @click="exportData">Export</button>
+            <button @click="importData">Import</button>
+            <button class="danger" @click="clearData">Clear all data</button>
+          </div>
         </div>
       </div>
     </div>
@@ -87,5 +136,9 @@ function clearData() {
 }
 .seg-ctrl button:hover:not(.active) {
   background: var(--border-light);
+}
+.btn-group {
+  display: flex;
+  gap: 8px;
 }
 </style>
