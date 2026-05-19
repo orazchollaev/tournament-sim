@@ -2,6 +2,7 @@ import { computed, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useTeamsStore } from "@/modules/teams/store"
 import { useTournamentStore } from "@/modules/tournament/store"
+import type { PlayoffSeedMode } from "@/modules/tournament/types"
 import { simulateMatch, simulatePenaltyShootout } from "@/engine"
 
 import confetti from "canvas-confetti"
@@ -49,6 +50,30 @@ export function useTournamentDetail() {
   function startNewSeason(seeded: boolean, orderedIds?: string[]) {
     const id = store.newSeason(route.params.id as string, seeded, orderedIds)
     if (id) router.push(`/tournaments/${id}`)
+  }
+
+  const tournamentId = computed(() => route.params.id as string)
+
+  const hasAnyResults = computed(() => store.hasAnyResults(tournamentId.value))
+
+  const availableTeams = computed(() =>
+    teamsStore.teams.filter((t) => !tournament.value?.teamIds.includes(t.id))
+  )
+
+  function addTeam(teamId: string) {
+    store.addTeamToTournament(tournamentId.value, teamId)
+  }
+
+  function removeTeam(teamId: string) {
+    store.removeTeamFromTournament(tournamentId.value, teamId)
+  }
+
+  function redrawTournament() {
+    store.redrawTournament(tournamentId.value)
+  }
+
+  function setPlayoffSeedMode(mode: PlayoffSeedMode) {
+    store.setPlayoffSeedMode(tournamentId.value, mode)
   }
 
   function fireTeamConfetti(color: string) {
@@ -99,5 +124,11 @@ export function useTournamentDetail() {
     deleteTournament,
     resetTournament,
     startNewSeason,
+    hasAnyResults,
+    availableTeams,
+    addTeam,
+    removeTeam,
+    redrawTournament,
+    setPlayoffSeedMode,
   }
 }

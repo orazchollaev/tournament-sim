@@ -5,6 +5,7 @@ import GroupStage from "@/modules/tournament/components/GroupStage.vue"
 import ParticipantsTable from "@/modules/tournament/components/ParticipantsTable.vue"
 import ManualDraw from "@/modules/tournament/components/ManualDraw.vue"
 import GroupDraw from "@/modules/tournament/components/GroupDraw.vue"
+import TournamentSettings from "@/modules/tournament/components/TournamentSettings.vue"
 import { useTournamentDetail } from "../composables/useTournamentDetail"
 
 const {
@@ -17,11 +18,18 @@ const {
   deleteTournament,
   resetTournament,
   startNewSeason,
+  hasAnyResults,
+  availableTeams,
+  addTeam,
+  removeTeam,
+  redrawTournament,
+  setPlayoffSeedMode,
 } = useTournamentDetail()
 
 const showSeasonModal = ref(false)
 const showManualSeason = ref(false)
 const showFullBracket = ref(false)
+const showSettingsModal = ref(false)
 
 // Tab: "groups" | "bracket" — only relevant for group+bracket format
 const activeTab = ref<"groups" | "bracket">("groups")
@@ -83,7 +91,10 @@ function closeSeasonModal() {
     </div>
     <template v-else>
       <div class="t-header">
-        <RouterLink to="/tournaments" class="back">← Tournaments</RouterLink>
+        <div class="t-header-top">
+          <RouterLink to="/tournaments" class="back">← Tournaments</RouterLink>
+          <button class="settings-btn" @click="showSettingsModal = true">⚙ Settings</button>
+        </div>
         <h1>
           {{ tournament.name }}
           <span class="t-season">S{{ tournament.season }}</span>
@@ -216,6 +227,20 @@ function closeSeasonModal() {
         <button class="danger" @click="deleteTournament">Delete</button>
       </div>
     </template>
+
+    <!-- Settings modal -->
+    <TournamentSettings
+      v-if="showSettingsModal && tournament"
+      :tournament="tournament"
+      :all-teams="allTeams"
+      :has-any-results="hasAnyResults"
+      :available-teams="availableTeams"
+      @add-team="addTeam"
+      @remove-team="removeTeam"
+      @redraw="redrawTournament"
+      @set-playoff-seed-mode="setPlayoffSeedMode"
+      @close="showSettingsModal = false"
+    />
 
     <!-- Full Bracket modal -->
     <div
@@ -469,6 +494,24 @@ function closeSeasonModal() {
 
 .season-group-modal {
   width: min(680px, calc(100vw - 32px));
+}
+
+/* Settings button in header */
+.t-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.settings-btn {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-color: var(--border-light);
+  color: var(--text-muted);
+}
+.settings-btn:hover {
+  color: var(--text);
+  border-color: var(--border);
 }
 
 @media (max-width: 600px) {

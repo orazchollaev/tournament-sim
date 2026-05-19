@@ -49,6 +49,8 @@ export interface Group {
 // ─── Tournament ──────────────────────────────────────────────────
 export type TournamentFormat = "bracket" | "group+bracket"
 
+export type PlayoffSeedMode = "cross" | "no-same-group" | "random"
+
 export interface Tournament {
   id: string
   name: string
@@ -63,6 +65,7 @@ export interface Tournament {
   // group stage (only when format === "group+bracket")
   groups?: Group[]
   groupsDone?: boolean // true once bracket has been seeded from groups
+  playoffSeedMode?: PlayoffSeedMode // how groups feed into the bracket
 
   createdAt: number
 }

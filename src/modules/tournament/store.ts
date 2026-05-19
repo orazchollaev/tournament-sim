@@ -1,7 +1,7 @@
 // modules/tournament/store.ts
 import { defineStore } from "pinia"
 import { ref } from "vue"
-import type { Tournament } from "./types"
+import type { Tournament, PlayoffSeedMode } from "./types"
 import {
   createTournament,
   propagateWinners,
@@ -193,7 +193,7 @@ export const useTournamentStore = defineStore("tournament", () => {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t || !t.groups) return
     if (!allGroupsDone(t)) return
-    seedBracketFromGroups(t, getTeams())
+    seedBracketFromGroups(t, getTeams(), t.playoffSeedMode ?? "cross")
   }
 
   function isGroupsDone(tournamentId: string): boolean {
@@ -239,6 +239,69 @@ export const useTournamentStore = defineStore("tournament", () => {
     t.winnerId = null
   }
 
+  // ─── Settings actions ──────────────────────────────────────────
+
+  function hasAnyResults(tournamentId: string): boolean {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t) return false
+    if (t.groups) {
+      for (const g of t.groups) {
+        if (g.matches.some((m) => m.result !== null)) return true
+      }
+    }
+    for (const round of t.rounds) {
+      for (const match of round.matches) {
+        // Exclude auto-resolved byes (one side is null)
+        if (match.result && match.homeId && match.awayId) return true
+      }
+    }
+    return false
+  }
+
+  function rebuildDraw(t: Tournament) {
+    const allTeams = getTeams()
+    const selected = allTeams.filter((tm) => t.teamIds.includes(tm.id))
+    const groupCount =
+      t.format === "group+bracket"
+        ? Math.min(t.groups?.length ?? 2, Math.floor(selected.length / 2))
+        : undefined
+    const fresh = createTournament(t.name, selected, t.season, false, undefined, groupCount)
+    t.rounds = fresh.rounds
+    t.winnerId = null
+    if (fresh.groups) {
+      t.groups = fresh.groups
+      t.groupsDone = false
+    }
+  }
+
+  function addTeamToTournament(tournamentId: string, teamId: string) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t || hasAnyResults(tournamentId)) return
+    if (t.teamIds.includes(teamId)) return
+    t.teamIds = [...t.teamIds, teamId]
+    rebuildDraw(t)
+  }
+
+  function removeTeamFromTournament(tournamentId: string, teamId: string) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t || hasAnyResults(tournamentId)) return
+    if (t.teamIds.length <= 2) return
+    t.teamIds = t.teamIds.filter((id) => id !== teamId)
+    rebuildDraw(t)
+  }
+
+  function redrawTournament(tournamentId: string) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t || hasAnyResults(tournamentId)) return
+    rebuildDraw(t)
+  }
+
+  function setPlayoffSeedMode(tournamentId: string, mode: PlayoffSeedMode) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t) return
+    t.playoffSeedMode = mode
+  }
+
   return {
     tournaments,
     active,
@@ -256,5 +319,10 @@ export const useTournamentStore = defineStore("tournament", () => {
     remove,
     getById,
     resetResults,
+    hasAnyResults,
+    addTeamToTournament,
+    removeTeamFromTournament,
+    redrawTournament,
+    setPlayoffSeedMode,
   }
 })

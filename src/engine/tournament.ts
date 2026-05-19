@@ -1,6 +1,6 @@
 // engine/tournament.ts
 import type { Team } from "../modules/teams/types"
-import type { Group, Tournament } from "../modules/tournament/types"
+import type { Group, Tournament, PlayoffSeedMode } from "../modules/tournament/types"
 import { uid, shuffle } from "./utils"
 import {
   buildBracketRounds,
@@ -113,39 +113,59 @@ function createGroupBracketTournament(
 }
 
 // ─── Seed bracket from group results ────────────────────────────
-// Classic cross-seeding: 1A vs 2B, 1B vs 2A, 1C vs 2D, 1D vs 2C …
-export function seedBracketFromGroups(tournament: Tournament, teams: Team[]) {
+export function seedBracketFromGroups(
+  tournament: Tournament,
+  teams: Team[],
+  mode: PlayoffSeedMode = "cross"
+) {
   if (!tournament.groups) return
   tournament.groups.forEach((g) => recalcStandings(g))
 
-  const firsts = tournament.groups.map((g) => teams.find((t) => t.id === g.standings[0]?.teamId)!)
-  const seconds = tournament.groups.map((g) => teams.find((t) => t.id === g.standings[1]?.teamId)!)
-
-  // Cross-seed: 1A vs 2B, 1B vs 2A, … (pair groups in order)
-  const bracketOrder: (Team | null)[] = []
   const gc = tournament.groups.length
+  const firsts = tournament.groups.map(
+    (g) => teams.find((t) => t.id === g.standings[0]?.teamId) ?? null
+  )
+  const seconds = tournament.groups.map(
+    (g) => teams.find((t) => t.id === g.standings[1]?.teamId) ?? null
+  )
 
-  for (let i = 0; i < gc; i += 2) {
-    bracketOrder.push(firsts[i] ?? null)
-    bracketOrder.push(seconds[i + 1] ?? null)
-  }
-  for (let i = 1; i < gc; i += 2) {
-    bracketOrder.push(firsts[i] ?? null)
-    bracketOrder.push(seconds[i - 1] ?? null)
+  let bracketOrder: (Team | null)[]
+
+  if (mode === "random") {
+    // Fully random — shuffle all qualifiers, split into two halves
+    bracketOrder = shuffle([...firsts, ...seconds] as (Team | null)[])
+  } else if (mode === "no-same-group") {
+    // Rotate runner-ups by 1: first[i] meets second[(i+1) % gc] — no same-group R1 meeting
+    const half1: (Team | null)[] = []
+    const half2: (Team | null)[] = []
+    for (let i = 0; i < gc; i++) {
+      const pair: [Team | null, Team | null] = [firsts[i], seconds[(i + 1) % gc]]
+      if (i % 2 === 0) half1.push(pair[0], pair[1])
+      else half2.push(pair[0], pair[1])
+    }
+    bracketOrder = [...half1, ...half2]
+  } else {
+    // "cross" — classic: 1A vs 2B, 1B vs 2A, 1C vs 2D, 1D vs 2C …
+    bracketOrder = []
+    for (let i = 0; i < gc; i += 2) {
+      bracketOrder.push(firsts[i] ?? null)
+      bracketOrder.push(seconds[i + 1] ?? null)
+    }
+    for (let i = 1; i < gc; i += 2) {
+      bracketOrder.push(firsts[i] ?? null)
+      bracketOrder.push(seconds[i - 1] ?? null)
+    }
   }
 
-  // Build slots for each bracket half. Byes (nulls) must each be paired with a real
-  // team — never with another null — otherwise null-vs-null matches produce no winner
-  // and the cascade breaks every subsequent round. Strategy: place each bye immediately
-  // after its paired team at the start of the half, then pack remaining real matches.
+  // Byes must each be paired with a real team — never with another null.
   const size = Math.pow(2, Math.ceil(Math.log2(bracketOrder.filter(Boolean).length || 2)))
   const half = size / 2
 
-  function buildHalfSlots(teams: (Team | null)[], targetSize: number): (Team | null)[] {
-    const byes = targetSize - teams.filter(Boolean).length
+  function buildHalfSlots(halfTeams: (Team | null)[], targetSize: number): (Team | null)[] {
+    const byes = targetSize - halfTeams.filter(Boolean).length
     const slots: (Team | null)[] = []
-    for (let i = 0; i < byes; i++) slots.push(teams[i] ?? null, null)
-    for (let i = byes; i < teams.length; i++) slots.push(teams[i] ?? null)
+    for (let i = 0; i < byes; i++) slots.push(halfTeams[i] ?? null, null)
+    for (let i = byes; i < halfTeams.length; i++) slots.push(halfTeams[i] ?? null)
     return slots
   }
 
