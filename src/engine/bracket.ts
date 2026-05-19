@@ -1,0 +1,128 @@
+// engine/bracket.ts
+import type { Team } from "../modules/teams/types"
+import type { Match, Round } from "../modules/tournament/types"
+import { uid, getRoundName, shuffle } from "./utils"
+
+export function getWinnerId(match: Match): string | null {
+  if (!match.result) return null
+  if (match.result.home > match.result.away) return match.homeId
+  if (match.result.away > match.result.home) return match.awayId
+  if (match.result.penHome !== undefined && match.result.penAway !== undefined) {
+    if (match.result.penHome > match.result.penAway) return match.homeId
+    if (match.result.penAway > match.result.penHome) return match.awayId
+  }
+  return null
+}
+
+export function propagateWinners(rounds: Round[], _teams: Team[]) {
+  for (let r = 0; r < rounds.length - 1; r++) {
+    const curr = rounds[r]
+    const next = rounds[r + 1]
+    curr.matches.forEach((match, i) => {
+      const winnerId = getWinnerId(match)
+      const slot = Math.floor(i / 2)
+      const isHome = i % 2 === 0
+      if (winnerId) {
+        if (isHome) next.matches[slot].homeId = winnerId
+        else next.matches[slot].awayId = winnerId
+      }
+    })
+  }
+}
+
+export function buildBracketRounds(orderedTeams: (Team | null)[]): Round[] {
+  const size = orderedTeams.length // must already be power-of-2
+  const firstMatches: Match[] = []
+
+  for (let i = 0; i < size / 2; i++) {
+    const home = orderedTeams[i * 2] ?? null
+    const away = orderedTeams[i * 2 + 1] ?? null
+    firstMatches.push({
+      id: uid(),
+      homeId: home?.id ?? null,
+      awayId: away?.id ?? null,
+      result: null,
+    })
+  }
+
+  // auto-resolve byes
+  firstMatches.forEach((m) => {
+    if (m.homeId && !m.awayId) m.result = { home: 1, away: 0 }
+    if (!m.homeId && m.awayId) m.result = { home: 0, away: 1 }
+  })
+
+  const rounds: Round[] = [{ name: getRoundName(size / 2), matches: firstMatches }]
+  let prev = firstMatches.length
+  while (prev > 1) {
+    const next = prev / 2
+    const matches: Match[] = Array.from({ length: next }, () => ({
+      id: uid(),
+      homeId: null,
+      awayId: null,
+      result: null,
+    }))
+    rounds.push({ name: getRoundName(next), matches })
+    prev = next
+  }
+
+  return rounds
+}
+
+export function buildEmptyBracketRounds(size: number): Round[] {
+  const rounds: Round[] = []
+  let n = size / 2
+  while (n >= 1) {
+    rounds.push({
+      name: getRoundName(n),
+      matches: Array.from({ length: n }, () => ({
+        id: uid(),
+        homeId: null,
+        awayId: null,
+        result: null,
+      })),
+    })
+    n = Math.floor(n / 2)
+  }
+  return rounds
+}
+
+export function buildPureBracket(teams: Team[], seeded: boolean, orderedTeams?: Team[]): Round[] {
+  const count = teams.length
+  const size = Math.pow(2, Math.ceil(Math.log2(count)))
+  const byes = size - count
+
+  let seededOrder: (Team | null)[]
+
+  if (orderedTeams) {
+    seededOrder = []
+    let idx = 0
+    for (let i = 0; i < size / 2; i++) {
+      const home = orderedTeams[idx++] ?? null
+      const away = byes > 0 && i < byes ? null : (orderedTeams[idx++] ?? null)
+      seededOrder.push(home, away)
+    }
+  } else if (seeded) {
+    const sorted = [...teams].sort((a, b) => b.power - a.power)
+    const byeTeams = sorted.slice(0, byes)
+    const rest = sorted.slice(byes)
+    const half = rest.length / 2
+    const pot1 = shuffle(rest.slice(0, half))
+    const pot2 = shuffle(rest.slice(half))
+    seededOrder = []
+    for (const t of byeTeams) seededOrder.push(t, null)
+    for (let i = 0; i < pot1.length; i++) seededOrder.push(pot1[i], pot2[i])
+  } else {
+    const shuffled = shuffle(teams)
+    seededOrder = []
+    let idx = 0
+    for (let i = 0; i < size / 2; i++) {
+      const home = shuffled[idx++] ?? null
+      const away = byes > 0 && i < byes ? null : (shuffled[idx++] ?? null)
+      seededOrder.push(home, away)
+    }
+  }
+
+  const rounds = buildBracketRounds(seededOrder)
+  propagateWinners(rounds, teams)
+  return rounds
+}

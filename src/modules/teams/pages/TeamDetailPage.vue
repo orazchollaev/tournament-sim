@@ -3,7 +3,7 @@ import { computed } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useTeamsStore } from "../../teams/store"
 import { useTournamentStore } from "@/modules/tournament/store"
-import { getWinnerId } from "@/engine/logic"
+import { getWinnerId } from "@/engine"
 import type { Match } from "@/modules/tournament/types"
 
 const route = useRoute()

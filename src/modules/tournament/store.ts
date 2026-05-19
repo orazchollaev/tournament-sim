@@ -15,7 +15,7 @@ import {
   allGroupsDone,
   seedBracketFromGroups,
   recalcStandings,
-} from "@/engine/logic"
+} from "@/engine"
 import { useTeamsStore } from "../teams/store"
 
 export const useTournamentStore = defineStore("tournament", () => {

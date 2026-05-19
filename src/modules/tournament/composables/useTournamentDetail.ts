@@ -2,7 +2,7 @@ import { computed, watch } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useTeamsStore } from "@/modules/teams/store"
 import { useTournamentStore } from "@/modules/tournament/store"
-import { simulateMatch, simulatePenaltyShootout } from "@/engine/logic"
+import { simulateMatch, simulatePenaltyShootout } from "@/engine"
 
 import confetti from "canvas-confetti"
 

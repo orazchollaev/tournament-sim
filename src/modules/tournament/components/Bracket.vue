@@ -3,7 +3,7 @@ import { ref, computed, nextTick, watch, onMounted, onUnmounted } from "vue"
 import type { Tournament, Match } from "../types"
 import type { Team } from "@/modules/teams/types"
 import TeamBadge from "@/modules/teams/components/TeamBadge.vue"
-import { getWinnerId } from "@/engine/logic"
+import { getWinnerId } from "@/engine"
 
 const props = defineProps<{ tournament: Tournament; teams: Team[] }>()
 const emit = defineEmits<{

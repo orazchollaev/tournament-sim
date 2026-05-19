@@ -2,7 +2,7 @@
 import { ref, computed } from "vue"
 import type { Team } from "@/modules/teams/types"
 import type { Tournament } from "@/modules/tournament/types"
-import { getWinnerId } from "@/engine/logic"
+import { getWinnerId } from "@/engine"
 
 const props = defineProps<{ teams: Team[]; tournament: Tournament }>()
 
