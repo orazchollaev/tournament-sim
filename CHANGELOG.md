@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.3](https://github.com/orazchollaev/tournament-sim/compare/v0.6.2...v0.6.3) (2026-05-19)
+
+### Features
+
+- add PWA support with offline caching ([5e2bdd5](https://github.com/orazchollaev/tournament-sim/commit/5e2bdd5159ae27bfee6a0ef7cc21364049e02a59))
+
+### Bug Fixes
+
+- pwa logo names ([517dafc](https://github.com/orazchollaev/tournament-sim/commit/517dafca52d677a56b2389646840ecd7c34237b1))
+
+### Documentation
+
+- update README for group+bracket format and engine refactor ([8910336](https://github.com/orazchollaev/tournament-sim/commit/8910336c20ef1a38d6d525969960697739f3172c))
+
 ## [0.6.2](https://github.com/orazchollaev/tournament-sim/compare/v0.6.1...v0.6.2) (2026-05-19)
 
 ### Features
