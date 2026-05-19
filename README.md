@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./public/logo.svg" width="140" />
+<img src="./public/favicon.svg" width="60" />
 
 # Tournament Sim
 
