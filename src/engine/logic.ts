@@ -285,11 +285,18 @@ function createGroupBracketTournament(
   groupCount: number,
   orderedTeams?: Team[]
 ): Tournament {
-  const teamsToPlace = orderedTeams
-    ? [...orderedTeams]
-    : seeded
-      ? [...teams].sort((a, b) => b.power - a.power)
-      : shuffle([...teams])
+  let teamsToPlace: Team[]
+  if (orderedTeams) {
+    teamsToPlace = [...orderedTeams]
+  } else if (seeded) {
+    const sorted = [...teams].sort((a, b) => b.power - a.power)
+    teamsToPlace = []
+    for (let i = 0; i < sorted.length; i += groupCount) {
+      teamsToPlace.push(...shuffle(sorted.slice(i, i + groupCount)))
+    }
+  } else {
+    teamsToPlace = shuffle([...teams])
+  }
 
   const groups: Group[] = []
   for (let g = 0; g < groupCount; g++) {
