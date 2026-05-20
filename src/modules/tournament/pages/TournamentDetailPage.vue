@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
+import { useRoute } from "vue-router"
+
 import Bracket from "@/modules/tournament/components/Bracket.vue"
 import GroupStage from "@/modules/tournament/components/GroupStage.vue"
 import ParticipantsTable from "@/modules/tournament/components/ParticipantsTable.vue"
@@ -8,6 +10,8 @@ import GroupDraw from "@/modules/tournament/components/GroupDraw.vue"
 import TournamentSettings from "@/modules/tournament/components/TournamentSettings.vue"
 import AppModal from "@/components/AppModal.vue"
 import { useTournamentDetail } from "../composables/useTournamentDetail"
+
+const route = useRoute()
 
 const {
   store,
@@ -39,6 +43,13 @@ watch(
   () => tournament.value?.groupsDone,
   (done) => {
     if (done) activeTab.value = "bracket"
+  }
+)
+
+watch(
+  () => route.params.id,
+  () => {
+    activeTab.value = "groups"
   }
 )
 
