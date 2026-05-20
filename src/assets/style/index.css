@@ -229,7 +229,7 @@ th {
   font-size: 11px;
   font-weight: 600;
   padding: 2px 8px;
-  border-radius: var(--radius);
+  border-radius: 0 var(--radius) var(--radius) 0;
   border-left: 3px solid var(--team-color, var(--accent));
   background: var(--bg);
   color: var(--text);
