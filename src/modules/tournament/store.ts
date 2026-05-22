@@ -65,7 +65,8 @@ export const useTournamentStore = defineStore("tournament", () => {
     id: string,
     seeded = false,
     orderedIds?: string[],
-    groupCount?: number
+    groupCount?: number,
+    isHaveThirdPlace?: boolean
   ): string | undefined {
     const t = tournaments.value.find((t) => t.id === id)
     if (!t || !t.winnerId) return
@@ -90,8 +91,12 @@ export const useTournamentStore = defineStore("tournament", () => {
       effectiveGroupCount,
       effectiveQpg
     )
+
     if (t.playoffSeedMode) newT.playoffSeedMode = t.playoffSeedMode
     tournaments.value.push(newT)
+    if (isHaveThirdPlace) {
+      toggleThirdPlace(newT.id)
+    }
     active.value = newT.id
     return newT.id
   }
@@ -414,6 +419,37 @@ export const useTournamentStore = defineStore("tournament", () => {
     t.playoffSeedMode = mode
   }
 
+  function isTournamentFinished(tournamentId: string): boolean {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t) return false
+
+    if (t.groups) {
+      for (const group of t.groups) {
+        for (const match of group.matches) {
+          if (!match.result) return false
+        }
+      }
+    }
+
+    for (const round of t.rounds) {
+      for (const match of round.matches) {
+        if (!match.homeId || !match.awayId) continue
+
+        if (!match.result) return false
+      }
+    }
+
+    if (t.thirdPlaceMatch) {
+      const m = t.thirdPlaceMatch
+
+      if (m.homeId && m.awayId && !m.result) {
+        return false
+      }
+    }
+
+    return true
+  }
+
   return {
     tournaments,
     active,
@@ -441,5 +477,6 @@ export const useTournamentStore = defineStore("tournament", () => {
     toggleThirdPlace,
     setThirdPlaceResult,
     simulateThirdPlace,
+    isTournamentFinished,
   }
 })

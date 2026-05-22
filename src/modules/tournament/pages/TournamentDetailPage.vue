@@ -42,6 +42,7 @@ const showSettingsModal = ref(false)
 
 const activeTab = ref<"groups" | "bracket">("groups")
 const isGroupFormat = computed(() => tournament.value?.format === "group+bracket")
+const isFinished = computed(() => store.isTournamentFinished(tournament.value!.id))
 
 watch(
   () => tournament.value?.groupsDone,
@@ -78,12 +79,12 @@ const tournamentTeams = computed(() =>
 )
 
 function handleNewSeason(seeded: boolean) {
-  startNewSeason(seeded)
+  startNewSeason(seeded, undefined, tournament.value?.hasThirdPlace ?? false)
   showSeasonModal.value = false
 }
 
 function handleManualSeasonConfirm(orderedIds: string[]) {
-  startNewSeason(false, orderedIds)
+  startNewSeason(false, orderedIds, tournament.value?.hasThirdPlace ?? false)
   showSeasonModal.value = false
   showManualSeason.value = false
 }
@@ -108,7 +109,7 @@ function closeSeasonModal() {
           <RouterLink to="/tournaments" class="back">← Tournaments</RouterLink>
           <div class="t-header-actions">
             <button
-              v-if="tournament.winnerId"
+              v-if="isFinished"
               class="primary new-season-btn"
               @click="showSeasonModal = true"
             >
