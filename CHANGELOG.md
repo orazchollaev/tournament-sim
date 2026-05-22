@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.1](https://github.com/orazchollaev/tournament-sim/compare/v0.8.0...v0.8.1) (2026-05-22)
+
+### Features
+
+- add third place match ([d69280b](https://github.com/orazchollaev/tournament-sim/commit/d69280bd1d1958f2bf4a3739b71146b143bfb168))
+- **bracket:** simplify bracket layout, fix 3rd place positioning, gold final card ([5f87bd9](https://github.com/orazchollaev/tournament-sim/commit/5f87bd96e0edd09bc7e50b3be48d6af26819226d))
+- **tournament:** add in-tournament team statistics panel ([f96b015](https://github.com/orazchollaev/tournament-sim/commit/f96b0158c160144836a4229f9cdf6d2abcb20939))
+
+### Bug Fixes
+
+- **style:** winner tag border-radius fixed ([ecc8d4d](https://github.com/orazchollaev/tournament-sim/commit/ecc8d4d5eb4e298ed077e565a98c6c223938fae7))
+
 ## [0.8.0](https://github.com/orazchollaev/tournament-sim/compare/v0.7.1...v0.8.0) (2026-05-20)
 
 ### Features
