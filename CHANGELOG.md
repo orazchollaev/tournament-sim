@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1](https://github.com/orazchollaev/tournament-sim/compare/v1.0.0...v1.0.1) (2026-05-23)
+
+### Features
+
+- **branding:** replace project logos with new design ([bfbefd6](https://github.com/orazchollaev/tournament-sim/commit/bfbefd6de3801426584f4ec92458099c8de7aab5))
+
 ## [1.0.0](https://github.com/orazchollaev/tournament-sim/compare/v0.8.1...v1.0.0) (2026-05-23)
 
 ### Features
