@@ -49,7 +49,7 @@ const router = useRouter()
             v-model.number="newPower"
             type="number"
             min="1"
-            max="100"
+            max="99"
             class="power-input"
             :disabled="store.teams.length >= MAX_TEAMS"
           />
@@ -82,13 +82,7 @@ const router = useRouter()
             <template v-if="editing === team.id">
               <input v-model="editName" class="edit-name" @keyup.enter="saveEdit(team.id)" />
               <input v-model="editColor" type="color" class="color-input-sm" />
-              <input
-                v-model.number="editPower"
-                type="number"
-                min="1"
-                max="100"
-                class="edit-power"
-              />
+              <input v-model.number="editPower" type="number" min="1" max="99" class="edit-power" />
               <button class="primary sm" @click="saveEdit(team.id)">Save</button>
               <button class="sm" @click="editing = null">Cancel</button>
             </template>

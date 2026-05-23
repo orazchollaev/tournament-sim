@@ -27,9 +27,13 @@ export const useTeamsStore = defineStore("teams", () => {
     { id: "4", name: "Team 4", color: "#e9c46a", power: 72 },
   ])
 
+  function clampPower(power: number) {
+    return Math.min(99, Math.max(1, Math.round(power)))
+  }
+
   function add(name: string, color: string, power: number) {
     if (teams.value.length >= MAX_TEAMS) return
-    teams.value.push({ id: Date.now().toString(), name, color, power })
+    teams.value.push({ id: Date.now().toString(), name, color, power: clampPower(power) })
   }
 
   function remove(id: string) {
@@ -43,7 +47,9 @@ export const useTeamsStore = defineStore("teams", () => {
 
   function update(id: string, data: Partial<Omit<Team, "id">>) {
     const t = teams.value.find((t) => t.id === id)
-    if (t) Object.assign(t, data)
+    if (!t) return
+    if (data.power !== undefined) data = { ...data, power: clampPower(data.power) }
+    Object.assign(t, data)
   }
 
   function isTeamInTournament(id: string) {
