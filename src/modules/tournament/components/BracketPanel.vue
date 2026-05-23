@@ -5,7 +5,7 @@ import type { Team } from "@/modules/teams/types"
 import Bracket from "./Bracket.vue"
 import FixtureView from "./FixtureView.vue"
 import { useTournamentStore } from "../store"
-import { Maximize2, Shuffle, X } from "lucide-vue-next"
+import { Maximize2, Minus, Plus, Shuffle, X } from "lucide-vue-next"
 
 const props = defineProps<{
   tournament: Tournament
@@ -16,6 +16,21 @@ const props = defineProps<{
 const store = useTournamentStore()
 const bracketView = ref<"bracket" | "fixtures">("bracket")
 const showFullBracket = ref(false)
+const zoom = ref(1)
+const fullZoom = ref(1)
+
+function zoomIn() {
+  zoom.value = Math.min(2, +(zoom.value + 0.1).toFixed(1))
+}
+function zoomOut() {
+  zoom.value = Math.max(0.5, +(zoom.value - 0.1).toFixed(1))
+}
+function fullZoomIn() {
+  fullZoom.value = Math.min(2, +(fullZoom.value + 0.1).toFixed(1))
+}
+function fullZoomOut() {
+  fullZoom.value = Math.max(0.5, +(fullZoom.value - 0.1).toFixed(1))
+}
 
 function setResult(ri: number, mi: number, h: number, a: number, ph?: number, pa?: number) {
   store.setResult(props.tournament.id, ri, mi, h, a, ph, pa)
@@ -60,6 +75,15 @@ onUnmounted(() => {
     <h2 class="bracket-heading">
       {{ title ?? "Bracket" }}
       <div class="bracket-heading-right">
+        <div v-if="bracketView === 'bracket'" class="zoom-controls">
+          <button class="btn-xs icon-only" :disabled="zoom <= 0.5" @click="zoomOut">
+            <Minus :size="13" />
+          </button>
+          <span class="zoom-label">{{ Math.round(zoom * 100) }}%</span>
+          <button class="btn-xs icon-only" :disabled="zoom >= 2" @click="zoomIn">
+            <Plus :size="13" />
+          </button>
+        </div>
         <div class="view-toggle">
           <button
             class="view-toggle-btn"
@@ -96,16 +120,17 @@ onUnmounted(() => {
           Sim {{ round.name }}
         </button>
       </div>
-      <Bracket
-        v-if="bracketView === 'bracket'"
-        class="bracket-wrapper"
-        :tournament="tournament"
-        :teams="teams"
-        @set-result="setResult"
-        @sim-match="simMatch"
-        @set-third-place-result="setThirdPlaceResult"
-        @sim-third-place="simThirdPlace"
-      />
+      <div v-if="bracketView === 'bracket'" class="bracket-wrapper">
+        <Bracket
+          :style="{ zoom }"
+          :tournament="tournament"
+          :teams="teams"
+          @set-result="setResult"
+          @sim-match="simMatch"
+          @set-third-place-result="setThirdPlaceResult"
+          @sim-third-place="simThirdPlace"
+        />
+      </div>
       <FixtureView
         v-else
         class="fixture-wrapper"
@@ -128,13 +153,25 @@ onUnmounted(() => {
       <div class="full-bracket-modal">
         <div class="full-bracket-header">
           <span>{{ tournament.name }} — Knockout</span>
-          <button class="btn-xs" @click="closeFullBracket">
-            <X :size="13" />
-            Close
-          </button>
+          <div class="full-bracket-header-right">
+            <div class="zoom-controls">
+              <button class="btn-xs icon-only" :disabled="fullZoom <= 0.5" @click="fullZoomOut">
+                <Minus :size="13" />
+              </button>
+              <span class="zoom-label">{{ Math.round(fullZoom * 100) }}%</span>
+              <button class="btn-xs icon-only" :disabled="fullZoom >= 2" @click="fullZoomIn">
+                <Plus :size="13" />
+              </button>
+            </div>
+            <button class="btn-xs" @click="closeFullBracket">
+              <X :size="13" />
+              Close
+            </button>
+          </div>
         </div>
         <div class="full-bracket-body">
           <Bracket
+            :style="{ zoom: fullZoom }"
             :tournament="tournament"
             :teams="teams"
             @set-result="setResult"
@@ -181,6 +218,24 @@ onUnmounted(() => {
 
 .fixture-wrapper {
   padding: 0 8px;
+}
+
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.zoom-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  width: 32px;
+  text-align: center;
+}
+
+.btn-xs.icon-only {
+  padding: 3px 5px;
 }
 
 .view-toggle {
@@ -240,6 +295,12 @@ onUnmounted(() => {
   flex-direction: column;
   width: 96vw;
   height: 92vh;
+}
+
+.full-bracket-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .full-bracket-header {
