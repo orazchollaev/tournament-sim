@@ -23,6 +23,16 @@ export const useTournamentStore = defineStore("tournament", () => {
   const groups = useGroupActions(tournaments, getTeams)
   const draw = useDrawActions(tournaments, getTeams)
 
+  function simulateTournament(tournamentId: string) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t) return
+    if (t.format === "group+bracket") {
+      groups.simAllGroups(tournamentId)
+      groups.advanceToBracket(tournamentId)
+    }
+    bracket.simulateAll(tournamentId)
+  }
+
   return {
     tournaments,
     active,
@@ -31,5 +41,6 @@ export const useTournamentStore = defineStore("tournament", () => {
     ...thirdPlace,
     ...groups,
     ...draw,
+    simulateTournament,
   }
 })

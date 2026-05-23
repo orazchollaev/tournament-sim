@@ -11,7 +11,7 @@ import TournamentSettings from "@/modules/tournament/components/TournamentSettin
 import TournamentStats from "@/modules/tournament/components/TournamentStats.vue"
 import AppModal from "@/components/AppModal.vue"
 import { useTournamentDetail } from "../composables/useTournamentDetail"
-import { Settings, Trophy, Lock, ArrowLeft } from "lucide-vue-next"
+import { Settings, Trophy, Lock, ArrowLeft, Zap } from "lucide-vue-next"
 
 const route = useRoute()
 
@@ -104,6 +104,14 @@ function closeSeasonModal() {
               @click="showSeasonModal = true"
             >
               New Season
+            </button>
+            <button
+              v-if="!isFinished"
+              class="simulate-all-btn"
+              @click="store.simulateTournament(tournament!.id)"
+            >
+              <Zap :size="13" />
+              Simulate All
             </button>
             <button class="settings-btn" @click="showSettingsModal = true">
               <Settings :size="14" />
@@ -319,6 +327,22 @@ function closeSeasonModal() {
 .settings-btn:hover {
   color: var(--text);
   border-color: var(--border);
+}
+
+.simulate-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.simulate-all-btn:hover {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+  border-color: var(--accent);
 }
 
 .winner-banner {
