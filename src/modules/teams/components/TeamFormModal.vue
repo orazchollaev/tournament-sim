@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 import AppModal from "@/components/AppModal.vue"
+import ColorPicker from "@/components/ColorPicker.vue"
 import { useTeamsStore } from "../store"
 import { useModal } from "@/composables/useModal"
 import { autoAbbr } from "@/composables/useTeamLookup"
@@ -76,10 +77,11 @@ function submit() {
             @keyup.enter="submit"
           />
         </div>
-        <div class="field">
-          <label>Color</label>
-          <input v-model="color" type="color" class="input-color" />
-        </div>
+      </div>
+
+      <div class="field">
+        <label>Color</label>
+        <ColorPicker v-model="color" />
       </div>
 
       <div class="form-actions">
@@ -124,14 +126,6 @@ function submit() {
 }
 .input-power {
   width: 72px;
-}
-.input-color {
-  width: 40px;
-  height: 32px;
-  padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
 }
 
 .form-actions {
