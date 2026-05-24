@@ -5,6 +5,9 @@ import type { Team } from "@/modules/teams/types"
 import { getWinnerId } from "@/engine"
 import { teamAbbr } from "@/composables/useTeamLookup"
 import TeamNameAuto from "@/modules/teams/components/TeamNameAuto.vue"
+import { useSettingsStore } from "@/modules/settings/store"
+
+const settings = useSettingsStore()
 import { X, Shuffle } from "lucide-vue-next"
 
 const props = defineProps<{ tournament: Tournament; teams: Team[] }>()
@@ -185,7 +188,8 @@ function getTeam(id: string | null): Team | null {
 
 function getAbbr(id: string | null): string {
   const t = getTeam(id)
-  return t ? teamAbbr(t) : "TBD"
+  if (!t) return "TBD"
+  return settings.showTeamAbbr ? teamAbbr(t) : t.name
 }
 
 const isSoloLayout = computed(() => {

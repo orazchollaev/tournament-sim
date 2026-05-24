@@ -259,6 +259,20 @@ export function seedBracketFromGroups(
     ...buildHalfSlots(firstHalf, half),
     ...buildHalfSlots(secondHalf, half),
   ])
+
+  if (tournament.knockoutLegMode === "double") {
+    for (let r = 0; r < rounds.length - 1; r++) {
+      rounds[r].matches.forEach((m) => {
+        m.leg2Result = null
+      })
+    }
+  }
+  if (tournament.finalLegMode === "double" && rounds.length > 0) {
+    rounds[rounds.length - 1].matches.forEach((m) => {
+      m.leg2Result = null
+    })
+  }
+
   propagateWinners(rounds, teams)
 
   tournament.rounds = rounds
