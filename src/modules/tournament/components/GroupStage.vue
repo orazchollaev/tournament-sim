@@ -137,7 +137,9 @@ function scoreAccentColor(match: GroupMatch): string {
                       class="dot"
                       :style="{ background: teamById(row.teamId)?.color ?? '#888' }"
                     />
-                    {{ teamById(row.teamId)?.name ?? row.teamId }}
+                    <span class="team-name-text">
+                      {{ teamById(row.teamId)?.name ?? row.teamId }}
+                    </span>
                   </span>
                 </td>
                 <td>{{ row.played }}</td>
@@ -258,7 +260,7 @@ function scoreAccentColor(match: GroupMatch): string {
 
 .gs-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 12px;
   padding: 0 8px 8px;
 }
@@ -313,7 +315,15 @@ function scoreAccentColor(match: GroupMatch): string {
 }
 .gs-table .col-team {
   text-align: left;
-  min-width: 110px;
+  min-width: 0;
+  max-width: 120px;
+}
+.team-name-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: block;
 }
 .col-pts {
   font-weight: 700;
