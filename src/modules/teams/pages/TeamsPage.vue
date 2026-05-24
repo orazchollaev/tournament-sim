@@ -4,7 +4,7 @@ import { useRouter } from "vue-router"
 import { useTeamsStore } from "../store"
 import TeamFormModal from "../components/TeamFormModal.vue"
 import type { Team } from "../types"
-import { X, Pencil, Search } from "lucide-vue-next"
+import { X, Pencil, Search, ChevronRight } from "lucide-vue-next"
 import { MAX_TEAMS } from "@/constants"
 
 const store = useTeamsStore()
@@ -55,7 +55,9 @@ const filtered = computed(() => {
         </div>
         <span class="t-power">{{ team.power }}</span>
         <div class="t-actions">
-          <button class="sm" @click="router.push(`/teams/${team.id}`)">Open</button>
+          <button class="sm icon-btn" title="Open" @click="router.push(`/teams/${team.id}`)">
+            <ChevronRight :size="14" />
+          </button>
           <button class="sm icon-btn" title="Edit" @click="editingTeam = team">
             <Pencil :size="13" />
           </button>

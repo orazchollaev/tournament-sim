@@ -8,7 +8,7 @@ import GroupDraw from "../components/GroupDraw.vue"
 import AppModal from "@/components/AppModal.vue"
 import CreateTournamentModal from "../components/CreateTournamentModal.vue"
 import type { Tournament } from "../types"
-import { Trophy, X, Search } from "lucide-vue-next"
+import { Trophy, X, Search, ChevronRight } from "lucide-vue-next"
 
 const router = useRouter()
 const teamsStore = useTeamsStore()
@@ -122,7 +122,13 @@ function closeSeasonModal() {
           <button v-if="store.isTournamentFinished(t.id)" class="sm" @click.stop="seasonModal = t">
             + Season
           </button>
-          <button class="primary sm" @click.stop="router.push(`/tournaments/${t.id}`)">Open</button>
+          <button
+            class="sm icon-btn"
+            title="Open"
+            @click.stop="router.push(`/tournaments/${t.id}`)"
+          >
+            <ChevronRight :size="14" />
+          </button>
           <button class="danger sm icon-btn" @click.stop="store.remove(t.id)">
             <X :size="13" />
           </button>
