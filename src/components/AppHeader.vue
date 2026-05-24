@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import AppLogoWordmark from "./AppLogoWordmark.vue"
-import { Settings } from "lucide-vue-next"
+import { Settings, Star, Github } from "lucide-vue-next"
+
+const GITHUB_URL = "https://github.com/orazchollaev/tournament-sim"
 </script>
 
 <template>
@@ -16,6 +18,17 @@ import { Settings } from "lucide-vue-next"
       </nav>
 
       <div class="header-end">
+        <a
+          :href="GITHUB_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="github-star-btn"
+          title="Star on GitHub"
+        >
+          <Github :size="15" />
+          <span class="github-star-label">Star</span>
+          <Star :size="12" class="github-star-icon" />
+        </a>
         <RouterLink to="/settings" class="settings-btn" title="Settings">
           <Settings :size="16" />
         </RouterLink>
@@ -91,7 +104,43 @@ import { Settings } from "lucide-vue-next"
   margin-left: auto;
   display: flex;
   align-items: center;
+  gap: 6px;
 }
+
+.github-star-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+  white-space: nowrap;
+}
+.github-star-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
+  text-decoration: none;
+}
+.github-star-btn:hover .github-star-icon {
+  color: #f0a500;
+}
+.github-star-label {
+  line-height: 1;
+}
+.github-star-icon {
+  transition: color 0.12s;
+}
+
 .settings-btn {
   display: flex;
   align-items: center;
@@ -126,6 +175,12 @@ import { Settings } from "lucide-vue-next"
   .main-nav a {
     padding: 5px 10px;
     font-size: 12px;
+  }
+  .github-star-label {
+    display: none;
+  }
+  .github-star-btn {
+    padding: 5px 8px;
   }
 }
 </style>
