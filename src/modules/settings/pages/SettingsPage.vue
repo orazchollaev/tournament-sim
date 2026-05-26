@@ -134,18 +134,42 @@ function importData() {
 
         <hr class="divider" />
 
-        <div class="setting-section-title">Season</div>
+        <div class="setting-section-title">Season defaults</div>
 
-        <div class="setting-row">
-          <span class="setting-label">New season draw</span>
-          <BtnGroup
-            v-model="settings.newSeasonDrawType"
-            :options="[
-              { value: 'random', label: 'Random' },
-              { value: 'seeded', label: 'Seeded' },
-              { value: 'manual', label: 'Manual' },
-            ]"
-          />
+        <div class="setting-group">
+          <div class="setting-row">
+            <span class="setting-label">Bracket draw</span>
+            <BtnGroup
+              v-model="settings.newSeasonDrawType"
+              :options="[
+                { value: 'random', label: 'Random' },
+                { value: 'seeded', label: 'Seeded' },
+                { value: 'manual', label: 'Manual' },
+              ]"
+            />
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Group draw</span>
+            <BtnGroup
+              v-model="settings.newSeasonGroupDrawType"
+              :options="[
+                { value: 'random', label: 'Random' },
+                { value: 'seeded', label: 'Seeded' },
+                { value: 'manual', label: 'Manual' },
+              ]"
+            />
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">Playoff seed</span>
+            <BtnGroup
+              v-model="settings.newSeasonPlayoffSeedMode"
+              :options="[
+                { value: 'cross', label: 'Cross' },
+                { value: 'no-same-group', label: 'No same-group' },
+                { value: 'random', label: 'Random' },
+              ]"
+            />
+          </div>
         </div>
 
         <hr class="divider" />

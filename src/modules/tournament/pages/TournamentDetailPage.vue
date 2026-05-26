@@ -42,11 +42,14 @@ const showManualSeason = ref(false)
 const showSettingsModal = ref(false)
 
 function openNewSeason() {
-  const drawType = settings.newSeasonDrawType
+  const isGroup = tournament.value?.format === "group+bracket"
+  const drawType = isGroup ? settings.newSeasonGroupDrawType : settings.newSeasonDrawType
+  const playoffSeedMode = isGroup ? settings.newSeasonPlayoffSeedMode : undefined
+  const thirdPlace = tournament.value?.hasThirdPlace ?? false
   if (drawType === "random") {
-    startNewSeason(false, undefined, tournament.value?.hasThirdPlace ?? false)
+    startNewSeason(false, undefined, thirdPlace, playoffSeedMode)
   } else if (drawType === "seeded") {
-    startNewSeason(true, undefined, tournament.value?.hasThirdPlace ?? false)
+    startNewSeason(true, undefined, thirdPlace, playoffSeedMode)
   } else {
     showManualSeason.value = true
     showSeasonModal.value = true
@@ -78,7 +81,9 @@ const tournamentTeams = computed(() =>
 )
 
 function handleManualSeasonConfirm(orderedIds: string[]) {
-  startNewSeason(false, orderedIds, tournament.value?.hasThirdPlace ?? false)
+  const playoffSeedMode =
+    tournament.value?.format === "group+bracket" ? settings.newSeasonPlayoffSeedMode : undefined
+  startNewSeason(false, orderedIds, tournament.value?.hasThirdPlace ?? false, playoffSeedMode)
   showSeasonModal.value = false
   showManualSeason.value = false
 }

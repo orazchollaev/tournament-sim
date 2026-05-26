@@ -31,13 +31,19 @@ export function useTournamentDetail() {
     store.resetResults(route.params.id as string)
   }
 
-  function startNewSeason(seeded: boolean, orderedIds?: string[], isHaveThirdPlace?: boolean) {
+  function startNewSeason(
+    seeded: boolean,
+    orderedIds?: string[],
+    isHaveThirdPlace?: boolean,
+    playoffSeedMode?: PlayoffSeedMode
+  ) {
     const id = store.newSeason(
       route.params.id as string,
       seeded,
       orderedIds,
       undefined,
-      isHaveThirdPlace
+      isHaveThirdPlace,
+      playoffSeedMode
     )
     if (id) router.push(`/tournaments/${id}`)
   }

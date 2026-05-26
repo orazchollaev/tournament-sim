@@ -7,7 +7,7 @@ import ManualDraw from "../components/ManualDraw.vue"
 import GroupDraw from "../components/GroupDraw.vue"
 import AppModal from "@/components/AppModal.vue"
 import CreateTournamentModal from "../components/CreateTournamentModal.vue"
-import type { Tournament } from "../types"
+import type { Tournament, PlayoffSeedMode } from "../types"
 import { useSettingsStore } from "@/modules/settings/store"
 import { Trophy, X, Search, ChevronRight } from "lucide-vue-next"
 
@@ -38,14 +38,20 @@ const seasonModal = ref<Tournament | null>(null)
 const showSeasonManual = ref(false)
 const showSeasonGroupDraw = ref(false)
 
-function doNewSeason(isSeeded: boolean, orderedIds?: string[], isHaveThirdPlace?: boolean) {
+function doNewSeason(
+  isSeeded: boolean,
+  orderedIds?: string[],
+  isHaveThirdPlace?: boolean,
+  playoffSeedMode?: PlayoffSeedMode
+) {
   if (!seasonModal.value) return
   const id = store.newSeason(
     seasonModal.value.id,
     isSeeded,
     orderedIds,
     undefined,
-    isHaveThirdPlace
+    isHaveThirdPlace,
+    playoffSeedMode
   )
   seasonModal.value = null
   showSeasonManual.value = false
@@ -55,13 +61,15 @@ function doNewSeason(isSeeded: boolean, orderedIds?: string[], isHaveThirdPlace?
 
 function openSeasonModal(t: Tournament) {
   seasonModal.value = t
-  const drawType = settings.newSeasonDrawType
+  const isGroup = t.format === "group+bracket"
+  const drawType = isGroup ? settings.newSeasonGroupDrawType : settings.newSeasonDrawType
+  const playoffSeedMode = isGroup ? settings.newSeasonPlayoffSeedMode : undefined
   if (drawType === "random") {
-    doNewSeason(false, undefined, t.hasThirdPlace ?? false)
+    doNewSeason(false, undefined, t.hasThirdPlace ?? false, playoffSeedMode)
   } else if (drawType === "seeded") {
-    doNewSeason(true, undefined, t.hasThirdPlace ?? false)
+    doNewSeason(true, undefined, t.hasThirdPlace ?? false, playoffSeedMode)
   } else {
-    if (t.format === "group+bracket") {
+    if (isGroup) {
       showSeasonGroupDraw.value = true
     } else {
       showSeasonManual.value = true
@@ -181,7 +189,15 @@ function closeSeasonModal() {
         <GroupDraw
           :teams="teamsStore.teams.filter((t) => seasonModal!.teamIds.includes(t.id))"
           :group-count="seasonModal.groups?.length ?? 2"
-          @confirm="(ids) => doNewSeason(false, ids, seasonModal?.hasThirdPlace ?? false)"
+          @confirm="
+            (ids) =>
+              doNewSeason(
+                false,
+                ids,
+                seasonModal?.hasThirdPlace ?? false,
+                settings.newSeasonPlayoffSeedMode
+              )
+          "
           @cancel="showSeasonGroupDraw = false"
         />
       </template>

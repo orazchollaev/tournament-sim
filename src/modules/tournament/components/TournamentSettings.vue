@@ -45,7 +45,7 @@ useModal(() => {
 })
 
 const selectedTeamToAdd = ref("")
-const drawType = ref<DrawType>("random")
+const drawType = ref<DrawType>(props.tournament.drawType ?? "random")
 const showManualDraw = ref(false)
 
 const drawOptions = [

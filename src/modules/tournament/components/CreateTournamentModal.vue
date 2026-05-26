@@ -9,7 +9,7 @@ import GroupDraw from "./GroupDraw.vue"
 import BtnGroup from "@/components/BtnGroup.vue"
 import { useModal } from "@/composables/useModal"
 import { X, Trophy, LayoutGrid } from "lucide-vue-next"
-import type { LegMode } from "@/modules/tournament/types"
+import type { LegMode, PlayoffSeedMode } from "@/modules/tournament/types"
 
 type DrawType = "random" | "seeded" | "manual"
 type TournamentFormat = "bracket" | "group+bracket"
@@ -23,12 +23,13 @@ const settingsStore = useSettingsStore()
 
 const name = ref("")
 const selected = ref<string[]>([])
-const drawType = ref<DrawType>("random")
 const format = ref<TournamentFormat>("bracket")
+const drawType = ref<DrawType>(settingsStore.newSeasonDrawType)
 const groupCount = ref(4)
 const qualifiersPerGroup = ref(2)
 const showManualDraw = ref(false)
 const hasThirdPlace = ref(false)
+const playoffSeedMode = ref<PlayoffSeedMode>(settingsStore.newSeasonPlayoffSeedMode)
 const groupLegMode = ref<LegMode>(settingsStore.groupLegMode)
 const knockoutLegMode = ref<LegMode>(settingsStore.knockoutLegMode)
 const finalLegMode = ref<LegMode>(settingsStore.finalLegMode)
@@ -78,7 +79,10 @@ function toggleAll() {
 
 function setFormat(f: TournamentFormat) {
   format.value = f
+  drawType.value =
+    f === "group+bracket" ? settingsStore.newSeasonGroupDrawType : settingsStore.newSeasonDrawType
   if (f === "group+bracket") {
+    playoffSeedMode.value = settingsStore.newSeasonPlayoffSeedMode
     groupCount.value = Math.min(4, maxGroups.value)
     qualifiersPerGroup.value = Math.min(2, maxQpg.value)
   }
@@ -94,14 +98,20 @@ function handleCreate() {
 }
 
 function doCreate(orderedIds?: string[]) {
-  const gc = format.value === "group+bracket" ? groupCount.value : undefined
-  const qpg = format.value === "group+bracket" ? qualifiersPerGroup.value : undefined
+  const isGroup = format.value === "group+bracket"
+  const gc = isGroup ? groupCount.value : undefined
+  const qpg = isGroup ? qualifiersPerGroup.value : undefined
   const isSeeded = drawType.value === "seeded"
-  const gLeg = format.value === "group+bracket" ? groupLegMode.value : "single"
-  // Persist leg mode defaults to settings
+  const gLeg = isGroup ? groupLegMode.value : "single"
   settingsStore.groupLegMode = gLeg
   settingsStore.knockoutLegMode = knockoutLegMode.value
   settingsStore.finalLegMode = finalLegMode.value
+  if (isGroup) {
+    settingsStore.newSeasonGroupDrawType = drawType.value
+    settingsStore.newSeasonPlayoffSeedMode = playoffSeedMode.value
+  } else {
+    settingsStore.newSeasonDrawType = drawType.value
+  }
   const id = store.create(
     name.value.trim(),
     selected.value,
@@ -113,6 +123,7 @@ function doCreate(orderedIds?: string[]) {
     knockoutLegMode.value,
     finalLegMode.value
   )
+  if (isGroup) store.setPlayoffSeedMode(id, playoffSeedMode.value)
   if (hasThirdPlace.value) store.toggleThirdPlace(id)
   router.push(`/tournaments/${id}`)
   emit("close")
@@ -274,7 +285,23 @@ const teamsPerGroup = computed(() =>
           <!-- Draw type -->
           <div class="ct-section">
             <div class="ct-label">Draw</div>
-            <BtnGroup v-model="drawType" :options="drawOptions" />
+            <div class="ct-draw-rows">
+              <div class="ct-draw-row">
+                <span v-if="format === 'group+bracket'" class="ct-leg-label">Group stage</span>
+                <BtnGroup v-model="drawType" :options="drawOptions" />
+              </div>
+              <div v-if="format === 'group+bracket'" class="ct-draw-row">
+                <span class="ct-leg-label">Playoff seed</span>
+                <BtnGroup
+                  v-model="playoffSeedMode"
+                  :options="[
+                    { value: 'cross', label: 'Cross' },
+                    { value: 'no-same-group', label: 'No same-group' },
+                    { value: 'random', label: 'Random' },
+                  ]"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Format options -->
@@ -582,6 +609,19 @@ const teamsPerGroup = computed(() =>
 .ct-toggle-hint {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* Draw rows */
+.ct-draw-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ct-draw-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 /* Leg mode */

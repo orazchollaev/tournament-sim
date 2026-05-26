@@ -1,7 +1,12 @@
 import type { Ref } from "vue"
-import type { Tournament, LegMode } from "../types"
+import type { Tournament, LegMode, PlayoffSeedMode, DrawType } from "../types"
 import type { Team } from "@/modules/teams/types"
 import { createTournament, uid, updateThirdPlaceSlots, recalcStandings } from "@/engine"
+
+function deriveDrawType(seeded: boolean, orderedIds?: string[]): DrawType {
+  if (orderedIds) return "manual"
+  return seeded ? "seeded" : "random"
+}
 
 export function useCrudActions(
   tournaments: Ref<Tournament[]>,
@@ -40,6 +45,7 @@ export function useCrudActions(
       knockoutLegMode,
       finalLegMode
     )
+    t.drawType = deriveDrawType(seeded, orderedIds)
     tournaments.value.push(t)
     active.value = t.id
     return t.id
@@ -50,7 +56,8 @@ export function useCrudActions(
     seeded = false,
     orderedIds?: string[],
     groupCount?: number,
-    withThirdPlace?: boolean
+    withThirdPlace?: boolean,
+    playoffSeedMode?: PlayoffSeedMode
   ): string | undefined {
     const t = tournaments.value.find((t) => t.id === id)
     if (!t || !t.winnerId) return
@@ -78,7 +85,9 @@ export function useCrudActions(
       t.knockoutLegMode ?? "single",
       t.finalLegMode ?? "single"
     )
-    if (t.playoffSeedMode) newT.playoffSeedMode = t.playoffSeedMode
+    newT.drawType = deriveDrawType(seeded, orderedIds)
+    if (playoffSeedMode) newT.playoffSeedMode = playoffSeedMode
+    else if (t.playoffSeedMode) newT.playoffSeedMode = t.playoffSeedMode
     if (withThirdPlace && newT.rounds.length >= 2) {
       newT.hasThirdPlace = true
       newT.thirdPlaceMatch = { id: uid(), homeId: null, awayId: null, result: null }

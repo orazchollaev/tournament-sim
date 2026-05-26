@@ -54,6 +54,7 @@ export interface Group {
 export type TournamentFormat = "bracket" | "group+bracket"
 
 export type PlayoffSeedMode = "cross" | "no-same-group" | "random"
+export type DrawType = "random" | "seeded" | "manual"
 
 export interface Tournament {
   id: string
@@ -71,6 +72,7 @@ export interface Tournament {
   groupsDone?: boolean // true once bracket has been seeded from groups
   qualifiersPerGroup?: number // how many teams advance per group (default 2)
   playoffSeedMode?: PlayoffSeedMode // how groups feed into the bracket
+  drawType?: DrawType // draw method used at creation/season-start
 
   hasThirdPlace?: boolean
   thirdPlaceMatch?: Match
