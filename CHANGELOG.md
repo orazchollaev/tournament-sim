@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.0](https://github.com/orazchollaev/tournament-sim/compare/v1.2.0...v1.3.0) (2026-05-26)
+
+### Features
+
+- **settings:** add toggle to show/hide team abbreviations ([5c0d1d5](https://github.com/orazchollaev/tournament-sim/commit/5c0d1d5450775c776369df5bead195bd6f7f4151))
+- **settings:** persist draw type per format and default redraw to tournament's draw mode ([35a15aa](https://github.com/orazchollaev/tournament-sim/commit/35a15aa673707bc7499e533e08a39e9509e2f829))
+- **settings:** skip new-season draw prompt, read type from settings ([cc226c5](https://github.com/orazchollaev/tournament-sim/commit/cc226c5252012c380615f5b7f858c4e7b86e3157))
+- **ui:** add new FIFA World Cup 2026 theme and teams ([8e2f778](https://github.com/orazchollaev/tournament-sim/commit/8e2f778e159a3f9f68d2da6798a519a68fd069ba))
+- **ui:** full animation pass — page transitions ([8b2e013](https://github.com/orazchollaev/tournament-sim/commit/8b2e01365814b6e913fe20678c0dd4c82fa9824e))
+- **ui:** stabilize AppModal — ESC key, X button, scroll, open animation ([8dca71b](https://github.com/orazchollaev/tournament-sim/commit/8dca71bebba98f72df042d374815ba1d204721d1))
+
+### Bug Fixes
+
+- include leg 2 goals in stats and require delete confirmation ([f396ef7](https://github.com/orazchollaev/tournament-sim/commit/f396ef752fff9233f6584c9b4da1effdcdedc735))
+- **tournament:** apply leg modes when seeding bracket from groups ([045bfec](https://github.com/orazchollaev/tournament-sim/commit/045bfec2eb12a1ac9856dfb5b3ea36c2251babb6))
+
+### Code Refactoring
+
+- **ui:** redesign settings and tournament creation UX with clearer labels, and contextual hints ([3eed7f9](https://github.com/orazchollaev/tournament-sim/commit/3eed7f97dac654f90342072b2248a125c26d5077))
+
+### Chores
+
+- fix build warnings ([f9b55d9](https://github.com/orazchollaev/tournament-sim/commit/f9b55d9159bcf9f7c172ac6d9d5d0bd9dd1f4b62))
+
 ## [1.2.0](https://github.com/orazchollaev/tournament-sim/compare/v1.1.0...v1.2.0) (2026-05-24)
 
 ### Features
