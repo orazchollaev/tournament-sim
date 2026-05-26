@@ -11,9 +11,11 @@ import TournamentSettings from "@/modules/tournament/components/TournamentSettin
 import TournamentStats from "@/modules/tournament/components/TournamentStats.vue"
 import AppModal from "@/components/AppModal.vue"
 import { useTournamentDetail } from "../composables/useTournamentDetail"
+import { useSettingsStore } from "@/modules/settings/store"
 import { Settings, Trophy, Lock, ArrowLeft, Zap } from "lucide-vue-next"
 
 const route = useRoute()
+const settings = useSettingsStore()
 
 const {
   store,
@@ -39,6 +41,18 @@ const showSeasonModal = ref(false)
 const showManualSeason = ref(false)
 const showSettingsModal = ref(false)
 
+function openNewSeason() {
+  const drawType = settings.newSeasonDrawType
+  if (drawType === "random") {
+    startNewSeason(false, undefined, tournament.value?.hasThirdPlace ?? false)
+  } else if (drawType === "seeded") {
+    startNewSeason(true, undefined, tournament.value?.hasThirdPlace ?? false)
+  } else {
+    showManualSeason.value = true
+    showSeasonModal.value = true
+  }
+}
+
 const activeTab = ref<"groups" | "bracket">("groups")
 const isGroupFormat = computed(() => tournament.value?.format === "group+bracket")
 const isFinished = computed(
@@ -62,11 +76,6 @@ watch(
 const tournamentTeams = computed(() =>
   allTeams.value.filter((t) => tournament.value?.teamIds.includes(t.id) ?? false)
 )
-
-function handleNewSeason(seeded: boolean) {
-  startNewSeason(seeded, undefined, tournament.value?.hasThirdPlace ?? false)
-  showSeasonModal.value = false
-}
 
 function handleManualSeasonConfirm(orderedIds: string[]) {
   startNewSeason(false, orderedIds, tournament.value?.hasThirdPlace ?? false)
@@ -99,11 +108,7 @@ function closeSeasonModal() {
             Tournaments
           </RouterLink>
           <div class="t-header-actions">
-            <button
-              v-if="isFinished"
-              class="primary new-season-btn"
-              @click="showSeasonModal = true"
-            >
+            <button v-if="isFinished" class="primary new-season-btn" @click="openNewSeason">
               New Season
             </button>
             <button
@@ -236,15 +241,6 @@ function closeSeasonModal() {
           @confirm="handleManualSeasonConfirm"
           @cancel="showManualSeason = false"
         />
-      </template>
-      <template v-else>
-        <p class="modal-desc">Choose draw type for Season {{ (tournament?.season ?? 1) + 1 }}</p>
-        <div class="modal-actions">
-          <button class="primary" @click="handleNewSeason(false)">Random draw</button>
-          <button class="primary" @click="handleNewSeason(true)">Seeded</button>
-          <button class="primary" @click="showManualSeason = true">Manual</button>
-          <button @click="closeSeasonModal">Cancel</button>
-        </div>
       </template>
     </AppModal>
   </div>

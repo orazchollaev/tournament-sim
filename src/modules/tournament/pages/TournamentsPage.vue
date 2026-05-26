@@ -8,11 +8,13 @@ import GroupDraw from "../components/GroupDraw.vue"
 import AppModal from "@/components/AppModal.vue"
 import CreateTournamentModal from "../components/CreateTournamentModal.vue"
 import type { Tournament } from "../types"
+import { useSettingsStore } from "@/modules/settings/store"
 import { Trophy, X, Search, ChevronRight } from "lucide-vue-next"
 
 const router = useRouter()
 const teamsStore = useTeamsStore()
 const store = useTournamentStore()
+const settings = useSettingsStore()
 
 function winnerName(t: Tournament) {
   return teamsStore.teams.find((tm) => tm.id === t.winnerId)?.name ?? "?"
@@ -51,12 +53,24 @@ function doNewSeason(isSeeded: boolean, orderedIds?: string[], isHaveThirdPlace?
   if (id) router.push(`/tournaments/${id}`)
 }
 
-function openSeasonManual() {
-  if (seasonModal.value?.format === "group+bracket") {
-    showSeasonGroupDraw.value = true
+function openSeasonModal(t: Tournament) {
+  seasonModal.value = t
+  const drawType = settings.newSeasonDrawType
+  if (drawType === "random") {
+    doNewSeason(false, undefined, t.hasThirdPlace ?? false)
+  } else if (drawType === "seeded") {
+    doNewSeason(true, undefined, t.hasThirdPlace ?? false)
   } else {
-    showSeasonManual.value = true
+    if (t.format === "group+bracket") {
+      showSeasonGroupDraw.value = true
+    } else {
+      showSeasonManual.value = true
+    }
   }
+}
+
+function deleteTournament(id: string) {
+  if (confirm("Delete this tournament?")) store.remove(id)
 }
 
 function closeSeasonModal() {
@@ -119,7 +133,11 @@ function closeSeasonModal() {
           </div>
         </div>
         <div class="t-actions">
-          <button v-if="store.isTournamentFinished(t.id)" class="sm" @click.stop="seasonModal = t">
+          <button
+            v-if="store.isTournamentFinished(t.id)"
+            class="sm"
+            @click.stop="openSeasonModal(t)"
+          >
             + Season
           </button>
           <button
@@ -129,10 +147,7 @@ function closeSeasonModal() {
           >
             <ChevronRight :size="14" />
           </button>
-          <button
-            class="danger sm icon-btn"
-            @click.stop="confirm('Delete this tournament?') && store.remove(t.id)"
-          >
+          <button class="danger sm icon-btn" @click.stop="deleteTournament(t.id)">
             <X :size="13" />
           </button>
         </div>
@@ -169,25 +184,6 @@ function closeSeasonModal() {
           @confirm="(ids) => doNewSeason(false, ids, seasonModal?.hasThirdPlace ?? false)"
           @cancel="showSeasonGroupDraw = false"
         />
-      </template>
-      <template v-else>
-        <p class="modal-desc">Choose draw type for Season {{ (seasonModal.season ?? 1) + 1 }}</p>
-        <div class="modal-actions">
-          <button
-            class="primary"
-            @click="doNewSeason(false, undefined, seasonModal?.hasThirdPlace ?? false)"
-          >
-            Random draw
-          </button>
-          <button
-            class="primary"
-            @click="doNewSeason(true, undefined, seasonModal?.hasThirdPlace ?? false)"
-          >
-            Seeded
-          </button>
-          <button class="primary" @click="openSeasonManual">Manual</button>
-          <button @click="closeSeasonModal">Cancel</button>
-        </div>
       </template>
     </AppModal>
   </div>

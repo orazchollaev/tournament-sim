@@ -134,6 +134,22 @@ function importData() {
 
         <hr class="divider" />
 
+        <div class="setting-section-title">Season</div>
+
+        <div class="setting-row">
+          <span class="setting-label">New season draw</span>
+          <BtnGroup
+            v-model="settings.newSeasonDrawType"
+            :options="[
+              { value: 'random', label: 'Random' },
+              { value: 'seeded', label: 'Seeded' },
+              { value: 'manual', label: 'Manual' },
+            ]"
+          />
+        </div>
+
+        <hr class="divider" />
+
         <div class="setting-section-title">Display</div>
 
         <div class="setting-row">
