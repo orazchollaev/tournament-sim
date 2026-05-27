@@ -95,7 +95,7 @@ function handleManualConfirm(orderedIds: string[]) {
 </script>
 
 <template>
-  <AppModal :width="'min(520px, calc(100vw - 32px))'" :z-index="250" flush top @close="handleClose">
+  <AppModal :width="'min(520px, calc(100vw - 32px))'" :z-index="250" flush @close="handleClose">
     <template #title>
       <span class="ts-header-title">
         <Settings :size="14" />

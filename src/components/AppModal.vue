@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 import { X } from "lucide-vue-next"
 
 withDefaults(
@@ -8,61 +8,63 @@ withDefaults(
     width?: string
     zIndex?: number
     flush?: boolean
-    top?: boolean
   }>(),
   {
     zIndex: 200,
     flush: false,
-    top: false,
   }
 )
 
 const emit = defineEmits<{ close: [] }>()
+const closing = ref(false)
+
+function close() {
+  if (closing.value) return
+  closing.value = true
+  setTimeout(() => emit("close"), 220)
+}
 
 function onKey(e: KeyboardEvent) {
-  if (e.key === "Escape") emit("close")
+  if (e.key === "Escape") close()
 }
 
 onMounted(() => {
+  const scrollbarW = window.innerWidth - document.documentElement.clientWidth
   document.body.style.overflow = "hidden"
+  if (scrollbarW > 0) document.body.style.paddingRight = `${scrollbarW}px`
   document.addEventListener("keydown", onKey)
 })
 
 onUnmounted(() => {
   document.body.style.overflow = ""
+  document.body.style.paddingRight = ""
   document.removeEventListener("keydown", onKey)
 })
 </script>
 
 <template>
-  <div
-    class="modal-backdrop"
-    :class="{ 'modal-backdrop--top': top }"
-    :style="{ zIndex }"
-    @click.self="emit('close')"
-  >
+  <div class="drawer-backdrop" :class="{ closing }" :style="{ zIndex }" @click.self="close">
     <div
-      class="modal"
-      :class="{ 'modal--top': top }"
+      class="drawer"
+      :class="{ closing }"
       :style="width ? { width } : {}"
       role="dialog"
       aria-modal="true"
     >
-      <div class="modal-header">
+      <div class="drawer-header">
         <slot name="title">
-          <span v-if="title" class="modal-title">{{ title }}</span>
+          <span v-if="title" class="drawer-title">{{ title }}</span>
         </slot>
-
-        <button class="modal-close" aria-label="Close" @click="emit('close')">
+        <button class="drawer-close" aria-label="Close" @click="close">
           <X :size="14" />
         </button>
       </div>
 
-      <div class="modal-body" :class="{ 'modal-body--flush': flush }">
+      <div class="drawer-body" :class="{ 'drawer-body--flush': flush }">
         <slot />
       </div>
 
-      <div v-if="$slots.footer" class="modal-footer">
+      <div v-if="$slots.footer" class="drawer-footer">
         <slot name="footer" />
       </div>
     </div>
@@ -79,51 +81,63 @@ onUnmounted(() => {
   }
 }
 
-@keyframes modal-in {
+@keyframes backdrop-out {
   from {
-    opacity: 0;
-    transform: scale(0.94) translateY(-12px);
+    opacity: 1;
   }
   to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
+    opacity: 0;
   }
 }
 
-.modal-backdrop {
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.drawer-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(32, 33, 34, 0.5);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: flex-end;
   animation: backdrop-in 0.18s ease both;
 }
 
-.modal-backdrop--top {
-  align-items: flex-start;
-  padding: 40px 16px 24px;
-  overflow-y: auto;
+.drawer-backdrop.closing {
+  animation: backdrop-out 0.22s ease both;
 }
 
-.modal {
+.drawer {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border-left: 1px solid var(--border);
   width: 420px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 48px);
+  max-width: 100vw;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  animation: modal-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: drawer-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.modal--top {
-  max-height: none;
-  flex-shrink: 0;
+.drawer.closing {
+  animation: drawer-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
 }
 
-.modal-header {
+.drawer-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,17 +145,16 @@ onUnmounted(() => {
   padding: 10px 14px;
   background: var(--bg);
   border-bottom: 1px solid var(--border-light);
-  border-radius: 8px 8px 0 0;
   flex-shrink: 0;
 }
 
-.modal-title {
+.drawer-title {
   font-family: var(--font);
   font-size: 15px;
   font-weight: 600;
 }
 
-.modal-close {
+.drawer-close {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -160,61 +173,34 @@ onUnmounted(() => {
     color 0.12s;
 }
 
-.modal-close:hover {
+.drawer-close:hover {
   background: color-mix(in srgb, var(--border) 60%, transparent);
   color: var(--text);
 }
 
-.modal-body {
+.drawer-body {
   padding: 14px;
   overflow-y: auto;
   flex: 1;
 }
 
-.modal-body--flush {
+.drawer-body--flush {
   padding: 0;
-  overflow-y: visible;
 }
 
-.modal-footer {
+.drawer-footer {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
   border-top: 1px solid var(--border-light);
   background: var(--bg);
-  border-radius: 0 0 8px 8px;
   flex-shrink: 0;
 }
 
-@media (max-width: 560px) {
-  .modal-backdrop--top {
-    padding: 0;
-  }
-
-  .modal--top {
-    max-width: 100%;
-    min-height: 100dvh;
-    border-radius: 0;
-  }
-
-  .modal--top .modal-header {
-    border-radius: 0;
-  }
-
-  .modal--top .modal-footer {
-    border-radius: 0;
-  }
-}
-
 @media (max-width: 480px) {
-  .modal {
-    max-width: calc(100vw - 16px);
-    border-radius: 6px;
-  }
-
-  .modal-body {
-    padding: 12px;
+  .drawer {
+    width: 100vw;
   }
 }
 </style>

@@ -140,7 +140,6 @@ const teamsPerGroup = computed(() =>
     :width="'min(540px, calc(100vw - 32px))'"
     :z-index="250"
     flush
-    top
     @close="handleClose"
   >
     <!-- Manual draw view -->
