@@ -1,3 +1,12 @@
+<script lang="ts" setup>
+import { computed } from "vue"
+import { useSettingsStore } from "@/modules/settings/store"
+
+const settings = useSettingsStore()
+
+const isThemeWC26 = computed(() => settings.theme === "worldcup2026")
+</script>
+
 <template>
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -34,7 +43,7 @@
       Tournament
     </text>
     <text
-      x="746"
+      :x="isThemeWC26 ? '670' : '746'"
       y="135"
       font-family="var(--font, 'IBM Plex Sans', sans-serif)"
       font-weight="400"
