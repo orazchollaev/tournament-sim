@@ -79,18 +79,6 @@ const filtered = computed(() => {
 </template>
 
 <style scoped>
-.page-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
 .count {
   font-size: 13px;
   font-weight: 400;
@@ -98,62 +86,11 @@ const filtered = computed(() => {
   margin-left: 6px;
 }
 
-.search-row {
-  margin-bottom: 10px;
-}
-.search-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.search-icon {
-  position: absolute;
-  left: 10px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-.search-input {
-  width: 100%;
-  padding-left: 32px;
-}
-
-.t-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.t-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--surface);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  min-width: 0;
-}
-
-.color-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  flex-shrink: 0;
-}
-
+/* Row layout overrides — Teams uses horizontal body (name + abbr inline) */
 .t-body {
-  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 7px;
-  flex: 1;
-  min-width: 0;
-}
-.t-name {
-  font-size: 14px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 .t-abbr {
   font-size: 11px;
@@ -164,7 +101,6 @@ const filtered = computed(() => {
   padding: 1px 5px;
   flex-shrink: 0;
 }
-
 .t-power {
   font-size: 12px;
   color: var(--text-muted);
@@ -173,39 +109,12 @@ const filtered = computed(() => {
   flex-shrink: 0;
 }
 
-.t-actions {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
-.icon-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-text {
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
 @media (max-width: 600px) {
-  .t-row {
-    flex-wrap: wrap;
-    row-gap: 8px;
-  }
   .t-body {
     flex: 1;
   }
   .t-power {
     margin-left: auto;
-  }
-  .t-actions {
-    flex: 1 1 100%;
   }
 }
 </style>

@@ -34,9 +34,6 @@ defineProps<{ stats: HistoryStats }>()
 
 <style scoped>
 .section-box {
-  background: var(--surface);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
   overflow: hidden;
 }
 .stats-section {

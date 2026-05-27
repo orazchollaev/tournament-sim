@@ -109,7 +109,7 @@ function closeSeasonModal() {
     <template v-else>
       <div class="t-header">
         <div class="t-header-top">
-          <RouterLink to="/tournaments" class="back">
+          <RouterLink to="/tournaments" class="back-link">
             <ArrowLeft :size="14" />
             Tournaments
           </RouterLink>
@@ -280,39 +280,6 @@ function closeSeasonModal() {
   color: var(--text-muted);
 }
 
-.t-header {
-  margin-bottom: 16px;
-}
-
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--accent);
-}
-
-.t-header h1 {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 6px 0 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.t-season {
-  font-size: 13px;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border-light);
-  border-radius: 2px;
-  padding: 1px 6px;
-  font-family: var(--font-ui);
-}
-
 .t-format-tag {
   font-size: 11px;
   color: var(--text-muted);
@@ -322,42 +289,29 @@ function closeSeasonModal() {
   padding: 1px 7px;
   font-family: var(--font-ui);
 }
-
 .t-meta {
   font-size: 12px;
   color: var(--text-muted);
 }
-
-.t-header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 2px;
-}
-
 .t-header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .new-season-btn {
   font-size: 12px;
   padding: 3px 10px;
 }
-
 .settings-btn {
   font-size: 12px;
   padding: 3px 10px;
   border-color: var(--border-light);
   color: var(--text-muted);
 }
-
 .settings-btn:hover {
   color: var(--text);
   border-color: var(--border);
 }
-
 .simulate-all-btn {
   display: inline-flex;
   align-items: center;
@@ -368,12 +322,10 @@ function closeSeasonModal() {
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
-
 .simulate-all-btn:hover {
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
   border-color: var(--accent);
 }
-
 .winner-chip {
   display: inline-flex;
   align-items: center;
@@ -386,75 +338,17 @@ function closeSeasonModal() {
   background: color-mix(in srgb, currentColor 8%, var(--surface));
   white-space: nowrap;
 }
-
-/* Phase tabs */
-.phase-tabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.phase-tab {
-  padding: 7px 18px;
-  font-size: 13px;
-  font-family: var(--font-ui);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  margin-bottom: -1px;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-}
-
-.phase-tab:hover:not(:disabled) {
-  color: var(--text);
-}
-
-.phase-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.phase-tab.disabled,
-.phase-tab:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.tab-lock {
-  font-size: 11px;
-}
-
 .gs-body {
   padding: 8px 0;
 }
 
 @media (max-width: 600px) {
-  .t-header h1 {
-    font-size: 18px;
-  }
   .t-header-top {
     flex-wrap: wrap;
     gap: 6px;
   }
   .t-header-actions {
     flex-wrap: wrap;
-  }
-  .phase-tab {
-    padding: 7px 12px;
-    font-size: 12px;
-  }
-  .winner-banner {
-    font-size: 13px;
-    padding: 8px 10px;
   }
 }
 </style>

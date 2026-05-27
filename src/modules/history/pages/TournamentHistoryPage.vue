@@ -169,7 +169,7 @@ const stats = computed<HistoryStats>(() => {
   <div class="page">
     <!-- Header -->
     <div class="t-header">
-      <RouterLink to="/history" class="back">
+      <RouterLink to="/history" class="back-link">
         <ArrowLeft :size="13" />
         History
       </RouterLink>
@@ -216,80 +216,7 @@ const stats = computed<HistoryStats>(() => {
 </template>
 
 <style scoped>
-.t-header {
-  margin-bottom: 16px;
-}
-.back {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  color: var(--accent);
-  text-decoration: none;
-}
-.t-header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 2px;
-}
-.t-header h1 {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 6px 0 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.t-season {
-  font-size: 13px;
-  color: var(--text-muted);
-  background: var(--bg);
-  border: 1px solid var(--border-light);
-  border-radius: 2px;
-  padding: 1px 6px;
-  font-family: var(--font-ui);
-}
-
-.phase-tabs {
-  display: flex;
-  gap: 0;
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--border-light);
-}
-.phase-tab {
-  padding: 7px 18px;
-  font-size: 13px;
-  font-family: var(--font-ui);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-  margin-bottom: -1px;
-  cursor: pointer;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
-}
-.phase-tab:hover {
-  color: var(--text);
-}
-.phase-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.empty-text {
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
+/* Vertical fade for tab content (overrides the global horizontal slide) */
 .tab-enter-active,
 .tab-leave-active {
   transition:
@@ -300,20 +227,5 @@ const stats = computed<HistoryStats>(() => {
 .tab-leave-to {
   opacity: 0;
   transform: translateY(4px);
-}
-
-@media (max-width: 600px) {
-  .t-header h1 {
-    font-size: 18px;
-  }
-  .phase-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .phase-tab {
-    padding: 7px 12px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
 }
 </style>

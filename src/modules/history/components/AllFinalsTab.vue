@@ -48,37 +48,8 @@ defineProps<{ finals: FinalEntry[] }>()
 
 <style scoped>
 .section-box {
-  background: var(--surface);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
   overflow: hidden;
 }
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.data-table th {
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 10px 14px 9px;
-  border-bottom: 1px solid var(--border-light);
-  font-family: var(--font-ui);
-}
-.data-table td {
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--border-light);
-  vertical-align: middle;
-}
-.data-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
 .col-season {
   width: 72px;
 }
@@ -87,7 +58,6 @@ defineProps<{ finals: FinalEntry[] }>()
   font-size: 12px;
   font-family: var(--font-ui);
 }
-
 .season-badge {
   font-size: 11px;
   font-weight: 600;
@@ -97,21 +67,5 @@ defineProps<{ finals: FinalEntry[] }>()
   border-radius: 2px;
   padding: 1px 6px;
   font-family: var(--font-ui);
-}
-
-.team-cell {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.color-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-}
-.muted {
-  color: var(--text-muted);
 }
 </style>
