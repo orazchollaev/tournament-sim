@@ -6,9 +6,9 @@ import { getWinnerId } from "@/engine"
 import { teamAbbr } from "@/composables/useTeamLookup"
 import TeamNameAuto from "@/modules/teams/components/TeamNameAuto.vue"
 import { useSettingsStore } from "@/modules/settings/store"
+import { X, Shuffle, Pencil, Check } from "lucide-vue-next"
 
 const settings = useSettingsStore()
-import { X, Shuffle } from "lucide-vue-next"
 
 const props = defineProps<{ tournament: Tournament; teams: Team[] }>()
 const emit = defineEmits<{
@@ -48,7 +48,6 @@ const roundOptions = computed(() => {
 
 const selectedRound = ref<number | "tp">(roundOptions.value[0]?.value ?? 0)
 
-// editKey: "{matchId}_leg{1|2}" for double-leg, "{matchId}" for single-leg/third-place
 const editingKey = ref<string | null>(null)
 const editMode = ref<"score" | "penalty">("score")
 const editHome = ref(0)
@@ -87,7 +86,6 @@ function isEditing(match: FlatMatch, leg: 1 | 2 = 1): boolean {
 
 function saveResult(match: FlatMatch, leg: 1 | 2 = 1) {
   if (leg === 2) {
-    // Check aggregate tie → need penalty
     const l1 = match.result
     if (l1) {
       const aggHome = l1.home + editAway.value
@@ -104,7 +102,6 @@ function saveResult(match: FlatMatch, leg: 1 | 2 = 1) {
     return
   }
 
-  // Leg 1 of double-leg: draw allowed, no penalty
   if (match.leg2Result !== undefined) {
     if (match._isThirdPlace) {
       emit("set-third-place-result", editHome.value, editAway.value)
@@ -115,7 +112,6 @@ function saveResult(match: FlatMatch, leg: 1 | 2 = 1) {
     return
   }
 
-  // Single-leg: draw → penalty
   if (editHome.value === editAway.value) {
     editMode.value = "penalty"
     editPenHome.value = match.result?.penHome ?? 0
@@ -197,19 +193,13 @@ const isSoloLayout = computed(() => {
   return selectedRound.value === lastRoundIdx || selectedRound.value === "tp"
 })
 
-function scoreLabelSingle(result: MatchResult | null | undefined): string {
-  if (!result) return "/"
-  const pen = result.penHome !== undefined ? ` (${result.penHome}–${result.penAway})` : ""
-  return `${result.home} – ${result.away}${pen}`
-}
-
 function legWinner(result: MatchResult | null | undefined, side: "home" | "away"): boolean {
   if (!result) return false
   return side === "home" ? result.home > result.away : result.away > result.home
 }
 
 function aggLabel(match: FlatMatch): string {
-  if (!match.result || !match.leg2Result) return "–"
+  if (!match.result || !match.leg2Result) return null as unknown as string
   const h = match.result.home + match.leg2Result.away
   const a = match.result.away + match.leg2Result.home
   return `${h} – ${a}`
@@ -220,23 +210,19 @@ function aggWinnerId(match: FlatMatch): string | null {
   return getWinnerId(match)
 }
 
-function singleScoreColor(match: FlatMatch): string {
-  if (!match.result) return ""
-  const { home, away } = match.result
-  if (home > away) return getTeam(match.homeId)?.color ?? ""
-  if (away > home) return getTeam(match.awayId)?.color ?? ""
-  return "var(--border)"
+function hasPen(result: MatchResult | null | undefined): boolean {
+  return !!result && result.penHome !== undefined
 }
 </script>
 
 <template>
-  <div class="fixture-view">
+  <div class="fv">
     <!-- Round tabs -->
-    <div class="round-tabs">
+    <div class="fv-tabs">
       <button
         v-for="opt in roundOptions"
         :key="String(opt.value)"
-        class="round-tab"
+        class="fv-tab"
         :class="{ active: selectedRound === opt.value, 'tp-tab': opt.value === 'tp' }"
         @click="selectedRound = opt.value"
       >
@@ -244,501 +230,870 @@ function singleScoreColor(match: FlatMatch): string {
       </button>
     </div>
 
-    <!-- Match list -->
-    <div class="fixture-list">
+    <!-- Match grid -->
+    <div class="fv-grid" :class="{ solo: isSoloLayout }">
       <template v-for="match in filteredMatches" :key="match.id">
-        <!-- ── Çift Maç (Double-leg) ── -->
-        <div
-          v-if="match.leg2Result !== undefined"
-          class="fx-double-tie"
-          :class="{ solo: isSoloLayout }"
-        >
+        <!-- ══ DOUBLE-LEG TIE ══ -->
+        <div v-if="match.leg2Result !== undefined" class="tie-card">
           <!-- Aggregate header -->
-          <div class="fx-agg-row">
-            <span class="fx-agg-teams">
-              <span class="dot" :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }" />
-              <span :title="getTeam(match.homeId)?.name">{{ getAbbr(match.homeId) }}</span>
+          <div class="tie-hd">
+            <div class="tie-hd-team">
+              <span class="cdot" :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }" />
+              <span class="tie-hd-name">{{ getAbbr(match.homeId) }}</span>
+            </div>
+            <div class="tie-hd-center">
               <span
-                class="fx-agg-score"
-                :class="{
-                  'agg-home': aggWinnerId(match) === match.homeId,
-                  'agg-away': aggWinnerId(match) === match.awayId,
-                }"
+                v-if="aggLabel(match)"
+                class="agg"
+                :class="{ 'agg--decided': aggWinnerId(match) }"
               >
                 {{ aggLabel(match) }}
               </span>
-              <span :title="getTeam(match.awayId)?.name">{{ getAbbr(match.awayId) }}</span>
-              <span class="dot" :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }" />
-            </span>
+              <span v-else class="agg agg--tbd">agg</span>
+              <span v-if="aggWinnerId(match)" class="agg-adv">
+                {{ getAbbr(aggWinnerId(match)) }} advances
+              </span>
+            </div>
+            <div class="tie-hd-team tie-hd-team--r">
+              <span class="tie-hd-name">{{ getAbbr(match.awayId) }}</span>
+              <span class="cdot" :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }" />
+            </div>
             <button
               v-if="match.homeId && match.awayId"
-              class="btn-xs sim-btn"
+              class="tie-sim"
               title="Simulate both legs"
               @click="$emit('sim-match', match._origRound, match._origMatch)"
             >
-              <Shuffle :size="12" />
+              <Shuffle :size="11" />
             </button>
           </div>
 
-          <!-- Leg 1: homeId at home -->
-          <div class="fx-leg-block">
-            <span class="fx-leg-tag">L1</span>
-            <div class="fx-match-inner">
-              <span
-                class="fx-team fx-team--home"
-                :class="{
-                  winner: legWinner(match.result, 'home'),
-                  loser: !!match.result && !legWinner(match.result, 'home'),
-                }"
-              >
-                <TeamNameAuto :team="getTeam(match.homeId)" />
-                <span class="dot" :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }" />
-              </span>
-              <div class="fx-center">
+          <!-- Leg rows -->
+          <div class="tie-legs">
+            <!-- Leg 1 -->
+            <div class="leg">
+              <div class="leg-label">L1</div>
+              <div class="leg-teams">
+                <div
+                  class="leg-tr"
+                  :class="{
+                    winner: legWinner(match.result, 'home'),
+                    loser: !!match.result && !legWinner(match.result, 'home'),
+                  }"
+                >
+                  <span
+                    class="cdot"
+                    :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }"
+                  />
+                  <TeamNameAuto :team="getTeam(match.homeId)" />
+                </div>
+                <div
+                  class="leg-tr leg-tr--away"
+                  :class="{
+                    winner: legWinner(match.result, 'away'),
+                    loser: !!match.result && !legWinner(match.result, 'away'),
+                  }"
+                >
+                  <span
+                    class="cdot"
+                    :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }"
+                  />
+                  <TeamNameAuto :team="getTeam(match.awayId)" />
+                </div>
+              </div>
+              <div v-if="match.homeId && match.awayId" class="leg-scores">
+                <div
+                  class="leg-sc"
+                  :class="{
+                    winner: legWinner(match.result, 'home'),
+                    loser: !!match.result && !legWinner(match.result, 'home'),
+                  }"
+                >
+                  <input
+                    v-if="isEditing(match, 1)"
+                    v-model.number="editHome"
+                    type="number"
+                    min="0"
+                    class="sinp"
+                  />
+                  <span v-else class="sc" :class="{ tbd: !match.result }">
+                    {{ match.result?.home ?? "–" }}
+                  </span>
+                </div>
+                <div
+                  class="leg-sc leg-sc--away"
+                  :class="{
+                    winner: legWinner(match.result, 'away'),
+                    loser: !!match.result && !legWinner(match.result, 'away'),
+                  }"
+                >
+                  <input
+                    v-if="isEditing(match, 1)"
+                    v-model.number="editAway"
+                    type="number"
+                    min="0"
+                    class="sinp"
+                  />
+                  <span v-else class="sc" :class="{ tbd: !match.result }">
+                    {{ match.result?.away ?? "–" }}
+                  </span>
+                </div>
+              </div>
+              <div v-if="match.homeId && match.awayId" class="leg-acts">
                 <template v-if="isEditing(match, 1)">
-                  <input v-model.number="editHome" type="number" min="0" class="score-input" />
-                  <span class="dash">–</span>
-                  <input v-model.number="editAway" type="number" min="0" class="score-input" />
-                  <button class="primary btn-xs" @click="saveResult(match, 1)">OK</button>
-                  <button class="btn-xs" @click="cancelEdit"><X :size="11" /></button>
+                  <button class="abt ok" @click="saveResult(match, 1)"><Check :size="11" /></button>
+                  <button class="abt" @click="cancelEdit"><X :size="11" /></button>
                 </template>
                 <template v-else>
-                  <button
-                    class="fx-score-btn"
-                    :disabled="!match.homeId || !match.awayId"
-                    @click="match.homeId && match.awayId ? startEdit(match, 1) : undefined"
-                  >
-                    {{ scoreLabelSingle(match.result) }}
+                  <button class="abt" title="Edit" @click="startEdit(match, 1)">
+                    <Pencil :size="11" />
                   </button>
                   <button
-                    v-if="match.homeId && match.awayId"
-                    class="btn-xs sim-btn"
+                    class="abt"
                     title="Simulate leg 1"
                     @click="$emit('sim-leg1', match._origRound, match._origMatch)"
                   >
-                    <Shuffle :size="12" />
+                    <Shuffle :size="11" />
                   </button>
                 </template>
               </div>
-              <span
-                class="fx-team fx-team--away"
-                :class="{
-                  winner: legWinner(match.result, 'away'),
-                  loser: !!match.result && !legWinner(match.result, 'away'),
-                }"
-              >
-                <span class="dot" :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }" />
-                <TeamNameAuto :team="getTeam(match.awayId)" />
-              </span>
             </div>
-          </div>
 
-          <!-- Leg 2: awayId at home (teams switched) -->
-          <div class="fx-leg-block">
-            <span class="fx-leg-tag">L2</span>
-            <div class="fx-match-inner">
-              <span
-                class="fx-team fx-team--home"
-                :class="{
-                  winner: legWinner(match.leg2Result, 'home'),
-                  loser: !!match.leg2Result && !legWinner(match.leg2Result, 'home'),
-                }"
-              >
-                <TeamNameAuto :team="getTeam(match.awayId)" />
-                <span class="dot" :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }" />
-              </span>
-              <div class="fx-center">
+            <!-- Leg 2 -->
+            <div class="leg" :class="{ 'leg--locked': !match.result }">
+              <div class="leg-label">L2</div>
+              <div class="leg-teams">
+                <div
+                  class="leg-tr"
+                  :class="{
+                    winner: legWinner(match.leg2Result, 'home'),
+                    loser: !!match.leg2Result && !legWinner(match.leg2Result, 'home'),
+                  }"
+                >
+                  <span
+                    class="cdot"
+                    :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }"
+                  />
+                  <TeamNameAuto :team="getTeam(match.awayId)" />
+                </div>
+                <div
+                  class="leg-tr leg-tr--away"
+                  :class="{
+                    winner: legWinner(match.leg2Result, 'away'),
+                    loser: !!match.leg2Result && !legWinner(match.leg2Result, 'away'),
+                  }"
+                >
+                  <span
+                    class="cdot"
+                    :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }"
+                  />
+                  <TeamNameAuto :team="getTeam(match.homeId)" />
+                </div>
+              </div>
+              <div v-if="match.homeId && match.awayId" class="leg-scores">
                 <template v-if="isEditing(match, 2) && editMode === 'penalty'">
-                  <span class="pen-label">Pen</span>
-                  <input v-model.number="editPenHome" type="number" min="0" class="score-input" />
-                  <span class="dash">–</span>
-                  <input v-model.number="editPenAway" type="number" min="0" class="score-input" />
-                  <button
-                    class="primary btn-xs"
-                    :disabled="editPenHome === editPenAway"
-                    @click="savePenalties(match, 2)"
-                  >
-                    OK
-                  </button>
-                  <button class="btn-xs" @click="cancelEdit"><X :size="11" /></button>
+                  <div class="leg-sc">
+                    <span class="pen-base">{{ editHome }}</span>
+                    <input
+                      v-model.number="editPenHome"
+                      type="number"
+                      min="0"
+                      class="sinp sinp--pen"
+                    />
+                  </div>
+                  <div class="leg-sc leg-sc--away">
+                    <span class="pen-base">{{ editAway }}</span>
+                    <input
+                      v-model.number="editPenAway"
+                      type="number"
+                      min="0"
+                      class="sinp sinp--pen"
+                    />
+                  </div>
                 </template>
-                <template v-else-if="isEditing(match, 2)">
-                  <input v-model.number="editHome" type="number" min="0" class="score-input" />
-                  <span class="dash">–</span>
-                  <input v-model.number="editAway" type="number" min="0" class="score-input" />
-                  <button class="primary btn-xs" @click="saveResult(match, 2)">OK</button>
-                  <button class="btn-xs" @click="cancelEdit"><X :size="11" /></button>
+                <template v-else>
+                  <div
+                    class="leg-sc"
+                    :class="{
+                      winner: legWinner(match.leg2Result, 'home'),
+                      loser: !!match.leg2Result && !legWinner(match.leg2Result, 'home'),
+                    }"
+                  >
+                    <input
+                      v-if="isEditing(match, 2)"
+                      v-model.number="editHome"
+                      type="number"
+                      min="0"
+                      class="sinp"
+                    />
+                    <template v-else>
+                      <span class="sc" :class="{ tbd: !match.leg2Result }">
+                        {{ match.leg2Result?.home ?? "–" }}
+                      </span>
+                      <span v-if="hasPen(match.leg2Result)" class="pen-sup">
+                        [{{ match.leg2Result!.penHome }}p]
+                      </span>
+                    </template>
+                  </div>
+                  <div
+                    class="leg-sc leg-sc--away"
+                    :class="{
+                      winner: legWinner(match.leg2Result, 'away'),
+                      loser: !!match.leg2Result && !legWinner(match.leg2Result, 'away'),
+                    }"
+                  >
+                    <input
+                      v-if="isEditing(match, 2)"
+                      v-model.number="editAway"
+                      type="number"
+                      min="0"
+                      class="sinp"
+                    />
+                    <template v-else>
+                      <span class="sc" :class="{ tbd: !match.leg2Result }">
+                        {{ match.leg2Result?.away ?? "–" }}
+                      </span>
+                      <span v-if="hasPen(match.leg2Result)" class="pen-sup">
+                        [{{ match.leg2Result!.penAway }}p]
+                      </span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+              <div v-if="match.homeId && match.awayId" class="leg-acts">
+                <template v-if="isEditing(match, 2)">
+                  <button
+                    class="abt ok"
+                    :disabled="editMode === 'penalty' && editPenHome === editPenAway"
+                    @click="editMode === 'penalty' ? savePenalties(match, 2) : saveResult(match, 2)"
+                  >
+                    <Check :size="11" />
+                  </button>
+                  <button class="abt" @click="cancelEdit"><X :size="11" /></button>
                 </template>
                 <template v-else>
                   <button
-                    class="fx-score-btn"
+                    class="abt"
+                    title="Edit"
                     :disabled="!match.result"
                     @click="match.result ? startEdit(match, 2) : undefined"
                   >
-                    {{ match.leg2Result ? scoreLabelSingle(match.leg2Result) : "/" }}
+                    <Pencil :size="11" />
                   </button>
                   <button
-                    v-if="match.result"
-                    class="btn-xs sim-btn"
+                    class="abt"
                     title="Simulate leg 2"
-                    @click="$emit('sim-leg2', match._origRound, match._origMatch)"
+                    :disabled="!match.result"
+                    @click="
+                      match.result
+                        ? $emit('sim-leg2', match._origRound, match._origMatch)
+                        : undefined
+                    "
                   >
-                    <Shuffle :size="12" />
+                    <Shuffle :size="11" />
                   </button>
                 </template>
               </div>
-              <span
-                class="fx-team fx-team--away"
-                :class="{
-                  winner: legWinner(match.leg2Result, 'away'),
-                  loser: !!match.leg2Result && !legWinner(match.leg2Result, 'away'),
-                }"
-              >
-                <span class="dot" :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }" />
-                <TeamNameAuto :team="getTeam(match.homeId)" />
-              </span>
             </div>
           </div>
         </div>
 
-        <!-- ── Tek Maç (Single-leg) ── -->
-        <div v-else class="fx-match" :class="{ editing: isEditing(match), solo: isSoloLayout }">
-          <span
-            class="fx-team fx-team--home"
-            :class="{
-              winner: match.result && getWinnerId(match) === match.homeId,
-              loser: match.result && getWinnerId(match) !== match.homeId,
-            }"
-          >
-            <TeamNameAuto :team="getTeam(match.homeId)" />
-            <span class="dot" :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }" />
-          </span>
-
-          <div class="fx-center">
-            <template v-if="isEditing(match) && editMode === 'penalty'">
-              <span class="pen-label">Pen</span>
-              <input v-model.number="editPenHome" type="number" min="0" class="score-input" />
-              <span class="dash">–</span>
-              <input v-model.number="editPenAway" type="number" min="0" class="score-input" />
-              <button
-                class="primary btn-xs"
-                :disabled="editPenHome === editPenAway"
-                @click="savePenalties(match)"
-              >
-                OK
-              </button>
-              <button class="btn-xs" @click="cancelEdit"><X :size="11" /></button>
-            </template>
-            <template v-else-if="isEditing(match)">
-              <input v-model.number="editHome" type="number" min="0" class="score-input" />
-              <span class="dash">–</span>
-              <input v-model.number="editAway" type="number" min="0" class="score-input" />
-              <button class="primary btn-xs" @click="saveResult(match)">OK</button>
-              <button class="btn-xs" @click="cancelEdit"><X :size="11" /></button>
-            </template>
-            <template v-else>
-              <button
-                class="fx-score-btn"
-                :style="
-                  match.result
-                    ? { borderColor: singleScoreColor(match), borderLeftWidth: '3px' }
-                    : {}
-                "
-                :disabled="!match.homeId || !match.awayId"
-                @click="match.homeId && match.awayId ? startEdit(match) : undefined"
-              >
-                {{ scoreLabelSingle(match.result) }}
-              </button>
-              <button
-                v-if="match.homeId && match.awayId"
-                class="btn-xs sim-btn"
-                title="Random result"
-                @click="$emit('sim-match', match._origRound, match._origMatch)"
-              >
-                <Shuffle :size="12" />
-              </button>
-            </template>
+        <!-- ══ SINGLE-LEG MATCH ══ -->
+        <div v-else class="mc" :class="{ 'mc--played': !!match.result }">
+          <div class="mc-teams">
+            <div
+              class="mc-row"
+              :class="{
+                winner: match.result && getWinnerId(match) === match.homeId,
+                loser: match.result && getWinnerId(match) !== match.homeId,
+              }"
+            >
+              <span class="cdot" :style="{ background: getTeam(match.homeId)?.color ?? '#ccc' }" />
+              <TeamNameAuto :team="getTeam(match.homeId)" />
+            </div>
+            <div
+              class="mc-row mc-row--away"
+              :class="{
+                winner: match.result && getWinnerId(match) === match.awayId,
+                loser: match.result && getWinnerId(match) !== match.awayId,
+              }"
+            >
+              <span class="cdot" :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }" />
+              <TeamNameAuto :team="getTeam(match.awayId)" />
+            </div>
           </div>
 
-          <span
-            class="fx-team fx-team--away"
-            :class="{
-              winner: match.result && getWinnerId(match) === match.awayId,
-              loser: match.result && getWinnerId(match) !== match.awayId,
-            }"
-          >
-            <span class="dot" :style="{ background: getTeam(match.awayId)?.color ?? '#ccc' }" />
-            <TeamNameAuto :team="getTeam(match.awayId)" />
-          </span>
+          <template v-if="match.homeId && match.awayId">
+            <div class="mc-scores">
+              <!-- Home score cell -->
+              <div
+                class="mc-scell"
+                :class="{
+                  winner: match.result && getWinnerId(match) === match.homeId,
+                  loser: match.result && getWinnerId(match) !== match.homeId,
+                }"
+              >
+                <template v-if="isEditing(match) && editMode === 'score'">
+                  <input v-model.number="editHome" type="number" min="0" class="sinp" />
+                </template>
+                <template v-else-if="isEditing(match) && editMode === 'penalty'">
+                  <span class="pen-base">{{ editHome }}</span>
+                  <input
+                    v-model.number="editPenHome"
+                    type="number"
+                    min="0"
+                    class="sinp sinp--pen"
+                  />
+                </template>
+                <template v-else>
+                  <span class="sc" :class="{ tbd: !match.result }">
+                    {{ match.result ? match.result.home : "–" }}
+                    <span v-if="match.result?.penHome !== undefined" class="pen-sup">
+                      [{{ match.result.penHome }}p]
+                    </span>
+                  </span>
+                </template>
+              </div>
+              <!-- Away score cell -->
+              <div
+                class="mc-scell mc-scell--away"
+                :class="{
+                  winner: match.result && getWinnerId(match) === match.awayId,
+                  loser: match.result && getWinnerId(match) !== match.awayId,
+                }"
+              >
+                <template v-if="isEditing(match) && editMode === 'score'">
+                  <input v-model.number="editAway" type="number" min="0" class="sinp" />
+                </template>
+                <template v-else-if="isEditing(match) && editMode === 'penalty'">
+                  <span class="pen-base">{{ editAway }}</span>
+                  <input
+                    v-model.number="editPenAway"
+                    type="number"
+                    min="0"
+                    class="sinp sinp--pen"
+                  />
+                </template>
+                <template v-else>
+                  <span class="sc" :class="{ tbd: !match.result }">
+                    {{ match.result ? match.result.away : "–" }}
+                    <span v-if="match.result?.penAway !== undefined" class="pen-sup">
+                      [{{ match.result.penAway }}p]
+                    </span>
+                  </span>
+                </template>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="mc-acts">
+              <template v-if="isEditing(match)">
+                <button
+                  class="abt ok"
+                  :disabled="editMode === 'penalty' && editPenHome === editPenAway"
+                  @click="editMode === 'penalty' ? savePenalties(match) : saveResult(match)"
+                >
+                  <Check :size="11" />
+                </button>
+                <button class="abt" @click="cancelEdit"><X :size="11" /></button>
+              </template>
+              <template v-else>
+                <button class="abt" title="Edit" @click="startEdit(match)">
+                  <Pencil :size="11" />
+                </button>
+                <button
+                  class="abt"
+                  title="Simulate"
+                  @click="$emit('sim-match', match._origRound, match._origMatch)"
+                >
+                  <Shuffle :size="11" />
+                </button>
+              </template>
+            </div>
+          </template>
         </div>
       </template>
 
-      <div v-if="filteredMatches.length === 0" class="empty-state">No matches yet.</div>
+      <div v-if="filteredMatches.length === 0" class="fv-empty">No matches yet.</div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.fixture-view {
+/* ── Layout ── */
+.fv {
   width: 100%;
 }
 
-/* Round tabs */
-.round-tabs {
+.fv-tabs {
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  padding: 0 8px 8px;
-  margin-bottom: 6px;
+  padding: 0 12px 10px;
   border-bottom: 1px solid var(--border-light);
+  margin-bottom: 12px;
 }
-.round-tab {
+
+.fv-tab {
   font-size: 11px;
   font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 3px;
+  padding: 3px 12px;
+  border-radius: 99px;
   border: 1px solid var(--border-light);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   transition:
-    background 0.1s,
-    color 0.1s,
-    border-color 0.1s;
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 }
-.round-tab:hover:not(.active) {
+.fv-tab:hover:not(.active) {
   background: var(--bg);
   color: var(--text);
   border-color: var(--border);
 }
-.round-tab.active {
+.fv-tab.active {
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
-.round-tab.tp-tab.active {
+.fv-tab.tp-tab.active {
   background: var(--accent-2);
   border-color: var(--accent-2);
 }
 
-/* Grid */
-.fixture-list {
+.fv-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 12px;
-  padding: 0 8px 6px;
+  gap: 6px;
+  padding: 0 12px 12px;
 }
-@media (max-width: 560px) {
-  .fixture-list {
+.fv-grid.solo {
+  grid-template-columns: 1fr;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+@media (max-width: 580px) {
+  .fv-grid {
     grid-template-columns: 1fr;
   }
-  .fx-match.solo,
-  .fx-double-tie.solo {
-    width: 100%;
-    grid-column: auto;
-  }
 }
 
-.empty-state {
+.fv-empty {
   grid-column: 1 / -1;
-  font-size: 12px;
-  color: var(--text-muted);
   text-align: center;
-  padding: 20px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 24px 0;
 }
 
-/* Single-leg match */
-.fx-match {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 4px;
+/* ── Single-leg match card ── */
+.mc {
+  display: flex;
+  flex-direction: row;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--surface);
   font-size: 12px;
-  padding: 2px 0;
+  overflow: hidden;
+  animation: fade-up 0.22s ease both;
 }
-.fx-match.solo {
-  grid-column: 1 / -1;
-  width: 50%;
-  justify-self: center;
+.mc--played {
+  border-color: var(--border);
 }
 
-/* Double-leg tie card */
-.fx-double-tie {
+.mc-teams {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  border: 1px solid var(--border-light);
-  border-radius: 3px;
-  padding: 5px 7px;
-  background: var(--bg);
-  font-size: 12px;
-}
-.fx-double-tie.solo {
-  grid-column: 1 / -1;
-  width: 50%;
-  justify-self: center;
 }
 
-.fx-agg-row {
+.mc-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding-bottom: 4px;
+  height: 28px;
+  padding: 0 8px;
+  gap: 5px;
   border-bottom: 1px solid var(--border-light);
-  margin-bottom: 2px;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition:
+    background 0.1s,
+    opacity 0.1s;
 }
-.fx-agg-teams {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--text-muted);
-  flex-wrap: wrap;
-  min-width: 0;
+.mc-row--away {
+  border-bottom: none;
 }
-.fx-agg-score {
-  font-family: var(--font-ui);
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--text);
-  padding: 0 3px;
-}
-.fx-agg-score.agg-home {
-  color: var(--success);
-}
-.fx-agg-score.agg-away {
-  color: var(--danger);
-}
-
-.fx-leg-block {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.fx-leg-tag {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  width: 14px;
-  flex-shrink: 0;
-}
-.fx-match-inner {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-/* Teams */
-.fx-team {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-}
-.fx-team--home {
-  justify-content: flex-end;
-  text-align: right;
-}
-.fx-team--away {
-  justify-content: flex-start;
-}
-.fx-team.winner {
+.mc-row.winner {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
   font-weight: 700;
 }
-.fx-team.loser {
+.mc-row.loser {
   opacity: 0.45;
 }
 
-.dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.mc-scores {
+  width: 52px;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-light);
 }
 
-/* Center */
-.fx-center {
+.mc-scell {
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  flex-shrink: 0;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--border-light);
+  box-sizing: border-box;
+  transition:
+    background 0.1s,
+    opacity 0.1s;
+}
+.mc-scell--away {
+  border-bottom: none;
+}
+.mc-scell.winner {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+}
+.mc-scell.loser {
+  opacity: 0.45;
 }
 
-/* Score button */
-.fx-score-btn {
-  font-family: var(--font-ui);
-  font-size: 12px;
-  font-weight: 600;
-  min-width: 48px;
+.mc-acts {
+  width: 28px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: 2px 6px;
+  gap: 4px;
+  padding: 0 4px;
+  border-left: 1px solid var(--border-light);
   background: var(--bg);
-  border: 1px solid var(--border-light);
-  border-radius: 3px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.1s;
-}
-.fx-score-btn:hover:not(:disabled) {
-  background: var(--border-light);
-}
-.fx-score-btn:disabled {
-  cursor: default;
-  opacity: 0.5;
+  box-sizing: border-box;
 }
 
-.sim-btn {
-  flex-shrink: 0;
-  opacity: 0.5;
-  padding: 2px 4px;
+/* ── Double-leg tie card ── */
+.tie-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  animation: fade-up 0.22s ease both;
 }
-.sim-btn:hover {
-  opacity: 1;
+
+.tie-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.tie-hd-team {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 0;
+}
+.tie-hd-team--r {
+  flex-direction: row-reverse;
+}
+.tie-hd-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 72px;
+}
+
+.tie-hd-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.agg {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.agg--decided {
   color: var(--accent);
 }
-
-.score-input {
-  width: 30px;
-  text-align: center;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 2px 3px;
-  font-size: 13px;
-  font-weight: 700;
-  color: inherit;
-  -moz-appearance: textfield;
-  appearance: textfield;
+.agg--tbd {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  opacity: 0.5;
 }
-.score-input:focus {
-  outline: none;
+.agg-adv {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.tie-sim {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition:
+    color 0.1s,
+    border-color 0.1s;
+}
+.tie-sim:hover {
+  color: var(--accent);
   border-color: var(--accent);
 }
-.score-input::-webkit-outer-spin-button,
-.score-input::-webkit-inner-spin-button {
+
+.tie-legs {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Leg row ── */
+.leg {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12px;
+}
+.leg:last-child {
+  border-bottom: none;
+}
+.leg--locked {
+  opacity: 0.38;
+  pointer-events: none;
+}
+
+.leg-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border-right: 1px solid var(--border-light);
+  background: var(--bg);
+}
+
+.leg-teams {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.leg-tr {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 6px;
+  gap: 5px;
+  border-bottom: 1px solid var(--border-light);
+  overflow: hidden;
+  transition:
+    background 0.1s,
+    opacity 0.1s;
+}
+.leg-tr--away {
+  border-bottom: none;
+}
+.leg-tr.winner {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+  font-weight: 700;
+}
+.leg-tr.loser {
+  opacity: 0.45;
+}
+
+.leg-scores {
+  width: 52px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-light);
+}
+
+.leg-sc {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--border-light);
+  box-sizing: border-box;
+  transition:
+    background 0.1s,
+    opacity 0.1s;
+}
+.leg-sc--away {
+  border-bottom: none;
+}
+.leg-sc.winner {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+}
+.leg-sc.loser {
+  opacity: 0.45;
+}
+
+.leg-acts {
+  width: 28px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 4px;
+  border-left: 1px solid var(--border-light);
+  background: var(--bg);
+  box-sizing: border-box;
+}
+
+/* ── Score chip ── */
+.sc {
+  font-weight: 700;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--text-muted) 10%, var(--surface));
+  border-radius: 3px;
+  padding: 1px 5px;
+  min-width: 18px;
+  text-align: center;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  animation: score-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.sc.tbd {
+  color: var(--text-muted);
+  font-weight: 400;
+  background: transparent;
+  animation: none;
+}
+.pen-sup {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.pen-base {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 10px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Color dot ── */
+.cdot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Number inputs ── */
+.sinp {
+  width: 26px;
+  text-align: center;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 1px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: inherit;
+  flex-shrink: 0;
+  -moz-appearance: textfield;
+  appearance: textfield;
+  box-sizing: border-box;
+}
+.sinp--pen {
+  width: 22px;
+  font-size: 11px;
+}
+.sinp:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+.sinp::-webkit-outer-spin-button,
+.sinp::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.dash {
+/* ── Action buttons ── */
+.abt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+  background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  transition:
+    color 0.1s,
+    border-color 0.1s,
+    background 0.1s;
 }
-.pen-label {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+.abt:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--border) 30%, transparent);
+}
+.abt.ok {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border-light));
+}
+.abt.ok:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+.abt:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 </style>
