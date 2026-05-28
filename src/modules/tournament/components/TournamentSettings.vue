@@ -6,7 +6,7 @@ import ManualDraw from "@/modules/tournament/components/ManualDraw.vue"
 import GroupDraw from "@/modules/tournament/components/GroupDraw.vue"
 import BtnGroup from "@/components/BtnGroup.vue"
 import AppModal from "@/components/AppModal.vue"
-import { Settings, X, Lock } from "lucide-vue-next"
+import { Settings, X, Lock, Save } from "lucide-vue-next"
 
 type DrawType = "random" | "seeded" | "manual"
 
@@ -36,9 +36,19 @@ const legOptions = [
   { value: "double", label: "Double" },
 ]
 
+// ── Draft (local) state ──────────────────────────────────────────────────────
+const localTeamIds = ref<string[]>([...props.tournament.teamIds])
 const selectedTeamToAdd = ref("")
 const drawType = ref<DrawType>(props.tournament.drawType ?? "random")
 const showManualDraw = ref(false)
+
+const localPlayoffSeedMode = ref<PlayoffSeedMode>(props.tournament.playoffSeedMode ?? "cross")
+const localGroupCount = ref(props.tournament.groups?.length ?? 2)
+const localQpg = ref(props.tournament.qualifiersPerGroup ?? 2)
+const localHasThirdPlace = ref(!!props.tournament.hasThirdPlace)
+const localGroupLegMode = ref<LegMode>(props.tournament.groupLegMode ?? "single")
+const localKnockoutLegMode = ref<LegMode>(props.tournament.knockoutLegMode ?? "single")
+const localFinalLegMode = ref<LegMode>(props.tournament.finalLegMode ?? "single")
 
 const drawOptions = [
   { value: "random", label: "Random" },
@@ -52,19 +62,38 @@ const playoffOptions = [
   { value: "random", label: "Random" },
 ]
 
-const tournamentTeams = computed(() =>
-  props.allTeams.filter((t) => props.tournament.teamIds.includes(t.id))
+// ── Derived from local state ─────────────────────────────────────────────────
+const localTeams = computed(() => props.allTeams.filter((t) => localTeamIds.value.includes(t.id)))
+const localAvailableTeams = computed(() =>
+  props.allTeams.filter((t) => !localTeamIds.value.includes(t.id))
 )
 const isGroupFormat = computed(() => props.tournament.format === "group+bracket")
 
-const currentGroupCount = computed(() => props.tournament.groups?.length ?? 2)
-const maxGroups = computed(() => Math.floor(props.tournament.teamIds.length / 2))
+const currentGroupCount = computed(() => localGroupCount.value)
+const maxGroups = computed(() => Math.floor(localTeamIds.value.length / 2))
 const minGroups = 2
 
-const currentQpg = computed(() => props.tournament.qualifiersPerGroup ?? 2)
-const maxQpg = computed(() => Math.floor(props.tournament.teamIds.length / currentGroupCount.value))
+const currentQpg = computed(() => localQpg.value)
+const maxQpg = computed(() => Math.floor(localTeamIds.value.length / currentGroupCount.value))
 const minQpg = 1
 
+const hasChanges = computed(() => {
+  const orig = props.tournament
+  const origSet = new Set(orig.teamIds)
+  const localSet = new Set(localTeamIds.value)
+  if (origSet.size !== localSet.size || [...origSet].some((id) => !localSet.has(id))) return true
+  if (drawType.value !== (orig.drawType ?? "random")) return true
+  if (localPlayoffSeedMode.value !== (orig.playoffSeedMode ?? "cross")) return true
+  if (localGroupCount.value !== (orig.groups?.length ?? 2)) return true
+  if (localQpg.value !== (orig.qualifiersPerGroup ?? 2)) return true
+  if (localHasThirdPlace.value !== !!orig.hasThirdPlace) return true
+  if (localGroupLegMode.value !== (orig.groupLegMode ?? "single")) return true
+  if (localKnockoutLegMode.value !== (orig.knockoutLegMode ?? "single")) return true
+  if (localFinalLegMode.value !== (orig.finalLegMode ?? "single")) return true
+  return false
+})
+
+// ── Handlers ─────────────────────────────────────────────────────────────────
 function handleClose() {
   if (showManualDraw.value) {
     showManualDraw.value = false
@@ -75,8 +104,12 @@ function handleClose() {
 
 function handleAddTeam() {
   if (!selectedTeamToAdd.value) return
-  emit("addTeam", selectedTeamToAdd.value)
+  localTeamIds.value.push(selectedTeamToAdd.value)
   selectedTeamToAdd.value = ""
+}
+
+function handleRemoveTeam(teamId: string) {
+  localTeamIds.value = localTeamIds.value.filter((id) => id !== teamId)
 }
 
 function handleRedraw() {
@@ -91,6 +124,53 @@ function handleRedraw() {
 function handleManualConfirm(orderedIds: string[]) {
   showManualDraw.value = false
   emit("redraw", false, orderedIds)
+}
+
+function handleSave() {
+  const orig = props.tournament
+
+  // Team changes
+  const origSet = new Set(orig.teamIds)
+  const localSet = new Set(localTeamIds.value)
+  for (const id of localSet) {
+    if (!origSet.has(id)) emit("addTeam", id)
+  }
+  for (const id of origSet) {
+    if (!localSet.has(id)) emit("removeTeam", id)
+  }
+
+  // Playoff seed mode
+  if (localPlayoffSeedMode.value !== (orig.playoffSeedMode ?? "cross")) {
+    emit("setPlayoffSeedMode", localPlayoffSeedMode.value)
+  }
+
+  // Group count
+  if (localGroupCount.value !== (orig.groups?.length ?? 2)) {
+    emit("changeGroupCount", localGroupCount.value)
+  }
+
+  // Qualifiers per group
+  if (localQpg.value !== (orig.qualifiersPerGroup ?? 2)) {
+    emit("changeQualifiersPerGroup", localQpg.value)
+  }
+
+  // Third place toggle
+  if (localHasThirdPlace.value !== !!orig.hasThirdPlace) {
+    emit("toggleThirdPlace")
+  }
+
+  // Leg modes
+  if (localGroupLegMode.value !== (orig.groupLegMode ?? "single")) {
+    emit("changeLegMode", "group", localGroupLegMode.value)
+  }
+  if (localKnockoutLegMode.value !== (orig.knockoutLegMode ?? "single")) {
+    emit("changeLegMode", "knockout", localKnockoutLegMode.value)
+  }
+  if (localFinalLegMode.value !== (orig.finalLegMode ?? "single")) {
+    emit("changeLegMode", "final", localFinalLegMode.value)
+  }
+
+  emit("close")
 }
 </script>
 
@@ -115,26 +195,24 @@ function handleManualConfirm(orderedIds: string[]) {
         </div>
         <template v-if="!hasAnyResults">
           <div class="team-list">
-            <div v-for="team in tournamentTeams" :key="team.id" class="team-row">
+            <div v-for="team in localTeams" :key="team.id" class="team-row">
               <span class="team-dot" :style="{ background: team.color }"></span>
               <span class="team-name">{{ team.name }}</span>
-              <bu5ton
-                clas
-                max-height:
-                150px;
-                overflow-y:
-                auto;s="danger team-remove"
-                :disabled="tournament.teamIds.length <= 2"
-                @click="emit('removeTeam', team.id)"
+              <button
+                class="danger team-remove"
+                :disabled="localTeamIds.length <= 2"
+                @click="handleRemoveTeam(team.id)"
               >
                 <X :size="13" />
-              </bu5ton>
+              </button>
             </div>
           </div>
-          <div v-if="availableTeams.length > 0" class="add-team-row">
+          <div v-if="localAvailableTeams.length > 0" class="add-team-row">
             <select v-model="selectedTeamToAdd">
               <option value="" disabled>Add team…</option>
-              <option v-for="t in availableTeams" :key="t.id" :value="t.id">{{ t.name }}</option>
+              <option v-for="t in localAvailableTeams" :key="t.id" :value="t.id">
+                {{ t.name }}
+              </option>
             </select>
             <button class="primary" :disabled="!selectedTeamToAdd" @click="handleAddTeam">
               Add
@@ -163,14 +241,14 @@ function handleManualConfirm(orderedIds: string[]) {
           <template v-if="showManualDraw">
             <GroupDraw
               v-if="isGroupFormat"
-              :teams="tournamentTeams"
-              :group-count="tournament.groups?.length ?? 2"
+              :teams="localTeams"
+              :group-count="localGroupCount"
               @confirm="handleManualConfirm"
               @cancel="showManualDraw = false"
             />
             <ManualDraw
               v-else
-              :teams="tournamentTeams"
+              :teams="localTeams"
               @confirm="handleManualConfirm"
               @cancel="showManualDraw = false"
             />
@@ -213,14 +291,14 @@ function handleManualConfirm(orderedIds: string[]) {
               <div class="gc-stepper">
                 <button
                   :disabled="currentGroupCount <= minGroups"
-                  @click="emit('changeGroupCount', currentGroupCount - 1)"
+                  @click="localGroupCount = currentGroupCount - 1"
                 >
                   −
                 </button>
                 <span class="gc-val">{{ currentGroupCount }}</span>
                 <button
                   :disabled="currentGroupCount >= maxGroups"
-                  @click="emit('changeGroupCount', currentGroupCount + 1)"
+                  @click="localGroupCount = currentGroupCount + 1"
                 >
                   +
                 </button>
@@ -229,17 +307,11 @@ function handleManualConfirm(orderedIds: string[]) {
             <div class="ts-stepper-row">
               <span class="ts-stepper-label">Teams that advance per group</span>
               <div class="gc-stepper">
-                <button
-                  :disabled="currentQpg <= minQpg"
-                  @click="emit('changeQualifiersPerGroup', currentQpg - 1)"
-                >
+                <button :disabled="currentQpg <= minQpg" @click="localQpg = currentQpg - 1">
                   −
                 </button>
                 <span class="gc-val">{{ currentQpg }}</span>
-                <button
-                  :disabled="currentQpg >= maxQpg"
-                  @click="emit('changeQualifiersPerGroup', currentQpg + 1)"
-                >
+                <button :disabled="currentQpg >= maxQpg" @click="localQpg = currentQpg + 1">
                   +
                 </button>
               </div>
@@ -266,10 +338,9 @@ function handleManualConfirm(orderedIds: string[]) {
           </div>
           <template v-if="!tournament.groupsDone">
             <BtnGroup
-              :model-value="tournament.playoffSeedMode ?? 'cross'"
+              v-model="localPlayoffSeedMode"
               :options="playoffOptions"
               class="btn-group--wrap"
-              @update:model-value="emit('setPlayoffSeedMode', $event as PlayoffSeedMode)"
             />
             <div class="ts-hint-box">
               <strong>Cross</strong>
@@ -300,11 +371,7 @@ function handleManualConfirm(orderedIds: string[]) {
           </div>
           <template v-if="!hasAnyResults">
             <label class="ts-toggle-row">
-              <input
-                type="checkbox"
-                :checked="!!tournament.hasThirdPlace"
-                @change="emit('toggleThirdPlace')"
-              />
+              <input v-model="localHasThirdPlace" type="checkbox" />
               <span class="ts-toggle-label">3rd Place Match</span>
               <span class="ts-hint">Semi-final losers play for bronze medal</span>
             </label>
@@ -336,27 +403,15 @@ function handleManualConfirm(orderedIds: string[]) {
           <div class="ts-leg-rows">
             <div v-if="isGroupFormat" class="ts-leg-row">
               <span class="ts-row-label">Group Stage</span>
-              <BtnGroup
-                :model-value="tournament.groupLegMode ?? 'single'"
-                :options="legOptions"
-                @update:model-value="emit('changeLegMode', 'group', $event as LegMode)"
-              />
+              <BtnGroup v-model="localGroupLegMode" :options="legOptions" />
             </div>
             <div class="ts-leg-row">
               <span class="ts-row-label">Knockout Rounds</span>
-              <BtnGroup
-                :model-value="tournament.knockoutLegMode ?? 'single'"
-                :options="legOptions"
-                @update:model-value="emit('changeLegMode', 'knockout', $event as LegMode)"
-              />
+              <BtnGroup v-model="localKnockoutLegMode" :options="legOptions" />
             </div>
             <div class="ts-leg-row">
               <span class="ts-row-label">Final</span>
-              <BtnGroup
-                :model-value="tournament.finalLegMode ?? 'single'"
-                :options="legOptions"
-                @update:model-value="emit('changeLegMode', 'final', $event as LegMode)"
-              />
+              <BtnGroup v-model="localFinalLegMode" :options="legOptions" />
             </div>
           </div>
         </template>
@@ -388,6 +443,14 @@ function handleManualConfirm(orderedIds: string[]) {
         </div>
       </div>
     </div>
+
+    <template #footer>
+      <button class="primary ts-save-btn" :disabled="!hasChanges" @click="handleSave">
+        <Save :size="14" />
+        Save Changes
+      </button>
+      <button @click="emit('close')">Cancel</button>
+    </template>
   </AppModal>
 </template>
 
@@ -474,6 +537,16 @@ function handleManualConfirm(orderedIds: string[]) {
 .ts-hint-box--top {
   margin-top: 0;
   margin-bottom: 8px;
+}
+
+.ts-pending-badge {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 4px 8px;
 }
 
 .ts-row {
@@ -630,6 +703,12 @@ function handleManualConfirm(orderedIds: string[]) {
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 1px;
+}
+
+.ts-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 :deep(.btn-group--wrap) {
