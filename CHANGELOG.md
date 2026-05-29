@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.4.0](https://github.com/orazchollaev/tournament-sim/compare/v1.3.4...v1.4.0) (2026-05-29)
+
+### Features
+
+- add league system ([9b4d16b](https://github.com/orazchollaev/tournament-sim/commit/9b4d16b2c2ca560db7fd022d8672fb31254db7dd))
+- add per-tournament tiebreaker setting (H2H vs goal difference) for group and league tables ([f4a370f](https://github.com/orazchollaev/tournament-sim/commit/f4a370f64c5db3d736b6cc5b0a0d057e5167722c))
+- add random name button to team and tournament name inputs ([37497bb](https://github.com/orazchollaev/tournament-sim/commit/37497bb74826d1bb4cef4792b146caf3fdcf11f4))
+- add save button to tournament settings panel ([83d8ea7](https://github.com/orazchollaev/tournament-sim/commit/83d8ea74730829bf0cc67617af6829f6808fbd23))
+- **history:** league-compatible history with All Seasons and All-Time Table tabs ([9937a1c](https://github.com/orazchollaev/tournament-sim/commit/9937a1ccbb795bf37497d14424c111ad569d0620))
+
+### Bug Fixes
+
+- **history:** exclude champion from runner-up count in league series ([42934ce](https://github.com/orazchollaev/tournament-sim/commit/42934ce2f4a4302b6a33551ba91157c9ed651098))
+- **league:** add stats support, position colors, table animation, match overflow ([0d3333b](https://github.com/orazchollaev/tournament-sim/commit/0d3333b6b029e389eb5b56f470e1ba3f3a050716))
+- stop overwriting global settings when creating a tournament ([fdc1beb](https://github.com/orazchollaev/tournament-sim/commit/fdc1bebdcb2558c5dd4a66004a17c9364f44dc37))
+
+### Code Refactoring
+
+- **league:** compact right panel — tighter matches, icon-only sim, smaller pills and nav ([a17593d](https://github.com/orazchollaev/tournament-sim/commit/a17593d439b7b31e1a73562e239fae7f54989e85))
+
+### Chores
+
+- **deps:** add workbox-window dependency ([44c8f7d](https://github.com/orazchollaev/tournament-sim/commit/44c8f7d44bdfc5295f509eee092f542760f51593))
+- fix build warnings ([c17c880](https://github.com/orazchollaev/tournament-sim/commit/c17c880c8018ada3fa6817d1c6512de701f1c126))
+
 ## [1.3.4](https://github.com/orazchollaev/tournament-sim/compare/v1.3.3...v1.3.4) (2026-05-27)
 
 ### Features
