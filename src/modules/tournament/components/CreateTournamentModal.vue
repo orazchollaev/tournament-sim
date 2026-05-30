@@ -37,6 +37,9 @@ const knockoutLegMode = ref<LegMode>(settingsStore.knockoutLegMode)
 const finalLegMode = ref<LegMode>(settingsStore.finalLegMode)
 const leagueLegMode = ref<LegMode>("single")
 const tiebreaker = ref<Tiebreaker>(settingsStore.tiebreaker)
+const tierCount = ref(1)
+const tierAssignments = ref<Record<string, number>>({}) // teamId → tier index (0-based)
+const promotionCount = ref(1)
 
 const legOptions = [
   { value: "single", label: "Single" },
@@ -84,6 +87,58 @@ watch(maxWildcards, (max) => {
   wildcardCount.value = Math.min(wildcardCount.value, max)
 })
 
+// When tier count changes, re-distribute teams evenly by power
+watch(tierCount, (count) => {
+  const sorted = [...selectedTeams.value].sort((a, b) => b.power - a.power)
+  const assignments: Record<string, number> = {}
+  const perTier = Math.ceil(sorted.length / count)
+  sorted.forEach((team, i) => {
+    assignments[team.id] = Math.min(Math.floor(i / perTier), count - 1)
+  })
+  tierAssignments.value = assignments
+})
+
+// When selected teams change, ensure all have a tier assignment
+watch(selectedTeams, (teams) => {
+  if (tierCount.value <= 1) return
+  const count = tierCount.value
+  const sorted = [...teams].sort((a, b) => b.power - a.power)
+  const perTier = Math.ceil(sorted.length / count)
+  const newAssignments = { ...tierAssignments.value }
+  sorted.forEach((team, i) => {
+    if (newAssignments[team.id] === undefined) {
+      newAssignments[team.id] = Math.min(Math.floor(i / perTier), count - 1)
+    }
+  })
+  // remove deselected teams
+  for (const id of Object.keys(newAssignments)) {
+    if (!teams.find((t) => t.id === id)) delete newAssignments[id]
+  }
+  tierAssignments.value = newAssignments
+})
+
+const tierNames = computed(() => {
+  const names: string[] = []
+  for (let i = 0; i < tierCount.value; i++) {
+    names.push(i === 0 ? "Division 1" : `Division ${i + 1}`)
+  }
+  return names
+})
+
+const teamsPerTier = computed(() => {
+  const buckets: string[][] = Array.from({ length: tierCount.value }, () => [])
+  for (const team of selectedTeams.value) {
+    const tier = tierAssignments.value[team.id] ?? 0
+    buckets[Math.min(tier, tierCount.value - 1)].push(team.id)
+  }
+  return buckets
+})
+
+const maxPromotionCount = computed(() => {
+  if (tierCount.value <= 1) return 0
+  return Math.max(0, Math.min(...teamsPerTier.value.map((b) => b.length)) - 1)
+})
+
 function toggleAll() {
   selected.value = allSelected.value ? [] : allTeams.value.map((t) => t.id)
 }
@@ -115,6 +170,22 @@ function handleCreate() {
 
 function doCreate(orderedIds?: string[]) {
   if (format.value === "league") {
+    if (tierCount.value > 1) {
+      const tierDefs = teamsPerTier.value.map((ids, i) => ({
+        name: tierNames.value[i],
+        teamIds: ids,
+      }))
+      const id = store.createMultiTierLeagueTournament(
+        name.value.trim(),
+        tierDefs,
+        leagueLegMode.value,
+        promotionCount.value,
+        tiebreaker.value
+      )
+      router.push(`/tournaments/${id}`)
+      emit("close")
+      return
+    }
     const id = store.createLeagueTournament(
       name.value.trim(),
       selected.value,
@@ -357,6 +428,88 @@ const teamsPerGroup = computed(() =>
               — home &amp; away for every pair
             </div>
           </div>
+        </div>
+
+        <div class="ct-divider" />
+        <div class="ct-section">
+          <div class="ct-label">League Tiers</div>
+          <div class="ct-gc-row">
+            <span class="ct-gc-label">Number of Tiers</span>
+            <div class="ct-gc-stepper">
+              <button :disabled="tierCount <= 1" @click="tierCount = Math.max(1, tierCount - 1)">
+                −
+              </button>
+              <span class="ct-gc-val">{{ tierCount }}</span>
+              <button
+                :disabled="tierCount >= 4 || selected.length < (tierCount + 1) * 2"
+                @click="tierCount = Math.min(4, tierCount + 1)"
+              >
+                +
+              </button>
+            </div>
+            <span class="ct-gc-hint">
+              {{ tierCount === 1 ? "single division" : `${tierCount} divisions` }}
+            </span>
+          </div>
+
+          <template v-if="tierCount > 1">
+            <div class="ct-gc-row" style="margin-top: 6px">
+              <span class="ct-gc-label">Promotion / Relegation</span>
+              <div class="ct-gc-stepper">
+                <button
+                  :disabled="promotionCount <= 1"
+                  @click="promotionCount = Math.max(1, promotionCount - 1)"
+                >
+                  −
+                </button>
+                <span class="ct-gc-val">{{ promotionCount }}</span>
+                <button
+                  :disabled="promotionCount >= maxPromotionCount"
+                  @click="promotionCount = Math.min(maxPromotionCount, promotionCount + 1)"
+                >
+                  +
+                </button>
+              </div>
+              <span class="ct-gc-hint">teams swap between adjacent tiers</span>
+            </div>
+
+            <div class="ct-tier-blocks">
+              <div v-for="(ids, ti) in teamsPerTier" :key="ti" class="ct-tier-block">
+                <div class="ct-tier-label">{{ tierNames[ti] }} ({{ ids.length }})</div>
+                <div class="ct-tier-chips">
+                  <div v-for="teamId in ids" :key="teamId" class="ct-tier-chip">
+                    <span
+                      class="ct-dot"
+                      :style="{
+                        background: allTeams.find((t) => t.id === teamId)?.color ?? '#888',
+                      }"
+                    />
+                    <span class="ct-tier-chip-name">
+                      {{ allTeams.find((t) => t.id === teamId)?.name }}
+                    </span>
+                    <div class="ct-tier-move">
+                      <button
+                        v-if="ti > 0"
+                        class="ct-tier-mv-btn"
+                        title="Move up"
+                        @click="tierAssignments[teamId] = ti - 1"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        v-if="ti < tierCount - 1"
+                        class="ct-tier-mv-btn"
+                        title="Move down"
+                        @click="tierAssignments[teamId] = ti + 1"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
       </template>
 
@@ -760,6 +913,70 @@ const teamsPerGroup = computed(() =>
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.ct-tier-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ct-tier-block {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.ct-tier-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+}
+.ct-tier-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 8px;
+}
+.ct-tier-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 4px 2px 6px;
+  border: 1px solid var(--border-light);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+.ct-tier-chip-name {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ct-tier-move {
+  display: inline-flex;
+  gap: 1px;
+  margin-left: 2px;
+}
+.ct-tier-mv-btn {
+  padding: 0 3px;
+  font-size: 10px;
+  line-height: 16px;
+  height: 16px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ct-tier-mv-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 
 .ct-badge {

@@ -15,6 +15,7 @@ const props = defineProps<{
   allTeams: Team[]
   hasAnyResults: boolean
   availableTeams: Team[]
+  otherLeagues?: Array<{ id: string; name: string; season: number }>
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +30,7 @@ const emit = defineEmits<{
   changeLegMode: [stage: "group" | "knockout" | "final", mode: LegMode]
   setLeagueLegMode: [mode: LegMode]
   changeRelegationCount: [count: number]
+  setLinkedLeague: [linkedId: string | null]
   changeTiebreaker: [tiebreaker: Tiebreaker]
   reset: []
   delete: []
@@ -56,6 +58,7 @@ const localKnockoutLegMode = ref<LegMode>(props.tournament.knockoutLegMode ?? "s
 const localFinalLegMode = ref<LegMode>(props.tournament.finalLegMode ?? "single")
 const localLeagueLegMode = ref<LegMode>(props.tournament.league?.legMode ?? "single")
 const localRelegationCount = ref(props.tournament.relegationCount ?? 0)
+const localLinkedLeagueId = ref<string>(props.tournament.linkedLeagueId ?? "")
 const localTiebreaker = ref<Tiebreaker>(props.tournament.tiebreaker ?? "goal-diff")
 const isLeagueFormat = computed(() => props.tournament.format === "league")
 
@@ -104,6 +107,7 @@ const hasChanges = computed(() => {
     return true
   if (isLeagueFormat.value && localRelegationCount.value !== (orig.relegationCount ?? 0))
     return true
+  if (isLeagueFormat.value && localLinkedLeagueId.value !== (orig.linkedLeagueId ?? "")) return true
   if (localTiebreaker.value !== (orig.tiebreaker ?? "goal-diff")) return true
   return false
 })
@@ -198,6 +202,11 @@ function handleSave() {
   // Relegation count
   if (isLeagueFormat.value && localRelegationCount.value !== (orig.relegationCount ?? 0)) {
     emit("changeRelegationCount", localRelegationCount.value)
+  }
+
+  // Linked league
+  if (isLeagueFormat.value && localLinkedLeagueId.value !== (orig.linkedLeagueId ?? "")) {
+    emit("setLinkedLeague", localLinkedLeagueId.value || null)
   }
 
   // Tiebreaker
@@ -534,6 +543,22 @@ function handleSave() {
               }}
             </span>
           </div>
+
+          <template v-if="localRelegationCount > 0 && (otherLeagues?.length ?? 0) > 0">
+            <div class="ts-stepper-row" style="margin-top: 6px">
+              <span class="ts-stepper-label">Linked League (2nd tier)</span>
+              <select v-model="localLinkedLeagueId" class="ts-linked-select">
+                <option value="">— None —</option>
+                <option v-for="l in otherLeagues" :key="l.id" :value="l.id">
+                  {{ l.name }} S{{ l.season }}
+                </option>
+              </select>
+            </div>
+            <div v-if="localLinkedLeagueId" class="ts-hint-box" style="margin-top: 4px">
+              At season end, bottom {{ localRelegationCount }} of this league swap with top
+              {{ localRelegationCount }} of the linked league.
+            </div>
+          </template>
         </div>
       </template>
 
@@ -778,6 +803,21 @@ function handleSave() {
   font-size: 13px;
   font-family: var(--font-ui);
   font-weight: 700;
+}
+
+.ts-linked-select {
+  flex: 1;
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  min-width: 0;
+}
+.ts-linked-select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .ts-toggle-row {

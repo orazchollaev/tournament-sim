@@ -1,8 +1,8 @@
 // modules/tournament/store.ts
 import { defineStore } from "pinia"
 import { ref } from "vue"
-import type { Tournament, Tiebreaker } from "./types"
-import { recalcStandings, recalcLeagueStandings } from "@/engine"
+import type { Tournament, Tiebreaker, LegMode } from "./types"
+import { recalcStandings, recalcLeagueStandings, createMultiTierLeague } from "@/engine"
 import { useTeamsStore } from "../teams/store"
 import { useCrudActions } from "./store/crud"
 import { useBracketActions } from "./store/bracket"
@@ -32,6 +32,12 @@ export const useTournamentStore = defineStore("tournament", () => {
     t.relegationCount = Math.max(0, count)
   }
 
+  function setLinkedLeague(tournamentId: string, linkedId: string | null) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t) return
+    t.linkedLeagueId = linkedId ?? undefined
+  }
+
   function setTiebreaker(tournamentId: string, tiebreaker: Tiebreaker) {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t) return
@@ -43,11 +49,38 @@ export const useTournamentStore = defineStore("tournament", () => {
     }
   }
 
+  function createMultiTierLeagueTournament(
+    name: string,
+    tierDefs: Array<{ name: string; teamIds: string[] }>,
+    legMode: LegMode = "single",
+    promotionCount = 1,
+    tiebreaker?: Tiebreaker
+  ): string {
+    const allTeams = useTeamsStore().teams
+    const season =
+      tournaments.value
+        .filter((t) => t.name === name)
+        .reduce((max, t) => Math.max(max, t.season), 0) + 1
+    const resolvedTiers = tierDefs.map((td) => ({
+      name: td.name,
+      teams: allTeams.filter((t) => td.teamIds.includes(t.id)),
+    }))
+    const newT = createMultiTierLeague(name, resolvedTiers, season, legMode, promotionCount)
+    if (tiebreaker) newT.tiebreaker = tiebreaker
+    tournaments.value.push(newT)
+    active.value = newT.id
+    return newT.id
+  }
+
   function simulateTournament(tournamentId: string) {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t) return
     if (t.format === "league") {
-      leagueActions.simAllLeague(tournamentId)
+      if (t.tiers?.length) {
+        leagueActions.simAllTiers(tournamentId)
+      } else {
+        leagueActions.simAllLeague(tournamentId)
+      }
       return
     }
     if (t.format === "group+bracket") {
@@ -69,5 +102,7 @@ export const useTournamentStore = defineStore("tournament", () => {
     simulateTournament,
     setTiebreaker,
     setRelegationCount,
+    setLinkedLeague,
+    createMultiTierLeagueTournament,
   }
 })

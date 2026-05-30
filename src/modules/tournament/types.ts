@@ -63,6 +63,12 @@ export interface League {
   legMode: LegMode
 }
 
+export interface LeagueTier {
+  name: string // "Division 1", "Division 2", …
+  teamIds: string[]
+  league: League
+}
+
 // ─── Tournament ──────────────────────────────────────────────────
 export type TournamentFormat = "bracket" | "group+bracket" | "league"
 
@@ -104,6 +110,14 @@ export interface Tournament {
 
   // league promotion/relegation: how many bottom teams swap out each new season
   relegationCount?: number
+
+  // optional link to a second league for automatic promotion/relegation swaps
+  linkedLeagueId?: string
+
+  // multi-tier league (array of tiers ordered top→bottom, replaces single `league` when set)
+  tiers?: LeagueTier[]
+  // how many teams swap between adjacent tiers at season end
+  promotionCount?: number
 
   createdAt: number
 }

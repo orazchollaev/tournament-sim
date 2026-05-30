@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue"
-import type { Tournament } from "@/modules/tournament/types"
+import type { League, Tournament } from "@/modules/tournament/types"
 import type { Team } from "@/modules/teams/types"
 import { Zap, ChevronLeft, ChevronRight } from "lucide-vue-next"
 
 const props = defineProps<{
   tournament: Tournament
   teams: Team[]
+  // Optional overrides for multi-tier mode
+  leagueOverride?: League
+  relegationCountOverride?: number
+  promotionCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -16,10 +20,12 @@ const emit = defineEmits<{
   simAll: []
 }>()
 
-const league = computed(() => props.tournament.league!)
+const league = computed(() => props.leagueOverride ?? props.tournament.league!)
 const matchdays = computed(() => league.value.matchdays)
 const standings = computed(() => league.value.standings)
-const relegationCount = computed(() => props.tournament.relegationCount ?? 0)
+const relegationCount = computed(
+  () => props.relegationCountOverride ?? props.tournament.relegationCount ?? 0
+)
 
 function isRelegated(rank: number) {
   return relegationCount.value > 0 && rank >= standings.value.length - relegationCount.value
@@ -27,6 +33,14 @@ function isRelegated(rank: number) {
 
 function isFirstRelegated(rank: number) {
   return relegationCount.value > 0 && rank === standings.value.length - relegationCount.value
+}
+
+function isPromoted(rank: number) {
+  return (props.promotionCount ?? 0) > 0 && rank < (props.promotionCount ?? 0)
+}
+
+function isLastPromoted(rank: number) {
+  return (props.promotionCount ?? 0) > 0 && rank === (props.promotionCount ?? 0) - 1
 }
 
 function firstUnplayedIdx() {
@@ -137,10 +151,12 @@ function handleSimMatchday(idx: number) {
                 :key="row.teamId"
                 :class="{
                   'lv-row--champion': rank === 0 && isFinished,
-                  'lv-pos--1': rank === 0,
-                  'lv-pos--2': rank === 1,
-                  'lv-pos--3': rank === 2,
-                  'lv-pos--4': rank === 3,
+                  'lv-pos--1': rank === 0 && !props.promotionCount,
+                  'lv-pos--2': rank === 1 && !props.promotionCount,
+                  'lv-pos--3': rank === 2 && !props.promotionCount,
+                  'lv-pos--4': rank === 3 && !props.promotionCount,
+                  'lv-pos--promoted': isPromoted(rank),
+                  'lv-pos--promoted-last': isLastPromoted(rank),
                   'lv-pos--relegated': isRelegated(rank),
                   'lv-pos--relegated-first': isFirstRelegated(rank),
                 }"
@@ -452,6 +468,16 @@ function handleSimMatchday(idx: number) {
 .lv-pos--4 .col-rank {
   color: #22c55e !important;
   font-weight: 600;
+}
+.lv-pos--promoted td:first-child {
+  border-left: 3px solid #22c55e;
+}
+.lv-pos--promoted .col-rank {
+  color: #22c55e !important;
+  font-weight: 600;
+}
+.lv-pos--promoted-last td {
+  border-bottom: 1px dashed color-mix(in srgb, #22c55e 40%, transparent);
 }
 .lv-pos--relegated td:first-child {
   border-left: 3px solid var(--danger);

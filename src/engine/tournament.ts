@@ -3,6 +3,7 @@ import type { Team } from "../modules/teams/types"
 import type {
   Group,
   GroupStanding,
+  LeagueTier,
   Tournament,
   PlayoffSeedMode,
   LegMode,
@@ -327,7 +328,45 @@ export function seedBracketFromGroups(
   tournament.groupsDone = true
 }
 
-// ─── League ──────────────────────────────────────────────────────
+// ─── Multi-tier League ───────────────────────────────────────────
+export function createMultiTierLeague(
+  name: string,
+  tierDefs: Array<{ name: string; teams: Team[] }>,
+  season = 1,
+  legMode: LegMode = "single",
+  promotionCount = 1
+): Tournament {
+  const tiers: LeagueTier[] = tierDefs.map(({ name: tierName, teams }) => {
+    const teamIds = teams.map((t) => t.id)
+    const matchdays = buildLeagueMatchdays(teamIds, legMode === "double")
+    const standings: GroupStanding[] = teamIds.map((teamId) => ({
+      teamId,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      gf: 0,
+      ga: 0,
+      gd: 0,
+      pts: 0,
+    }))
+    return { name: tierName, teamIds, league: { matchdays, standings, legMode } }
+  })
+  return {
+    id: uid(),
+    name,
+    season,
+    format: "league",
+    teamIds: tiers.flatMap((tier) => tier.teamIds),
+    tiers,
+    promotionCount,
+    rounds: [],
+    winnerId: null,
+    createdAt: Date.now(),
+  }
+}
+
+// ─── Single-tier League ──────────────────────────────────────────
 export function createLeague(
   name: string,
   teams: Team[],

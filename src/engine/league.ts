@@ -1,6 +1,12 @@
 // engine/league.ts
 import type { Team } from "../modules/teams/types"
-import type { GroupStanding, League, Tiebreaker, Tournament } from "../modules/tournament/types"
+import type {
+  GroupStanding,
+  League,
+  LeagueTier,
+  Tiebreaker,
+  Tournament,
+} from "../modules/tournament/types"
 import { buildGroupFixture } from "./groups"
 import { simulateMatch } from "./simulation"
 import { getTiebreaker } from "./tableConfig"
@@ -161,4 +167,79 @@ export function allLeagueDone(tournament: Tournament): boolean {
 export function getLeagueWinner(tournament: Tournament): string | null {
   if (!tournament.league || !allLeagueDone(tournament)) return null
   return tournament.league.standings[0]?.teamId ?? null
+}
+
+// ─── Multi-tier helpers ──────────────────────────────────────────
+
+function getTier(tournament: Tournament, tierIdx: number): LeagueTier | undefined {
+  return tournament.tiers?.[tierIdx]
+}
+
+export function setTierMatchResult(
+  tournament: Tournament,
+  tierIdx: number,
+  matchdayIdx: number,
+  matchIdx: number,
+  home: number,
+  away: number
+) {
+  const tier = getTier(tournament, tierIdx)
+  if (!tier) return
+  tier.league.matchdays[matchdayIdx].matches[matchIdx].result = { home, away }
+  recalcLeagueStandings(tier.league, tournament.tiebreaker)
+}
+
+export function simulateTierMatch(
+  tournament: Tournament,
+  tierIdx: number,
+  matchdayIdx: number,
+  matchIdx: number,
+  teams: Team[]
+) {
+  const tier = getTier(tournament, tierIdx)
+  if (!tier) return
+  const match = tier.league.matchdays[matchdayIdx].matches[matchIdx]
+  match.result = simulateMatch(match as any, teams)
+  recalcLeagueStandings(tier.league, tournament.tiebreaker)
+}
+
+export function simulateTierMatchday(
+  tournament: Tournament,
+  tierIdx: number,
+  matchdayIdx: number,
+  teams: Team[]
+) {
+  const tier = getTier(tournament, tierIdx)
+  if (!tier) return
+  for (const match of tier.league.matchdays[matchdayIdx].matches) {
+    if (!match.result) match.result = simulateMatch(match as any, teams)
+  }
+  recalcLeagueStandings(tier.league, tournament.tiebreaker)
+}
+
+export function simulateAllTier(tournament: Tournament, tierIdx: number, teams: Team[]) {
+  const tier = getTier(tournament, tierIdx)
+  if (!tier) return
+  for (let i = 0; i < tier.league.matchdays.length; i++) {
+    simulateTierMatchday(tournament, tierIdx, i, teams)
+  }
+}
+
+export function simulateAllTiers(tournament: Tournament, teams: Team[]) {
+  if (!tournament.tiers?.length) return
+  for (let i = 0; i < tournament.tiers.length; i++) {
+    simulateAllTier(tournament, i, teams)
+  }
+}
+
+export function allTiersDone(tournament: Tournament): boolean {
+  if (!tournament.tiers?.length) return false
+  return tournament.tiers.every((tier) =>
+    tier.league.matchdays.every((md) => md.matches.every((m) => m.result !== null))
+  )
+}
+
+export function getTiersWinner(tournament: Tournament): string | null {
+  if (!allTiersDone(tournament)) return null
+  return tournament.tiers?.[0]?.league.standings[0]?.teamId ?? null
 }

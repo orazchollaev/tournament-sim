@@ -7,6 +7,13 @@ export function useDrawActions(tournaments: Ref<Tournament[]>, getTeams: () => T
   function hasAnyResults(tournamentId: string): boolean {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t) return false
+    if (t.tiers) {
+      for (const tier of t.tiers) {
+        for (const md of tier.league.matchdays) {
+          if (md.matches.some((m) => m.result !== null)) return true
+        }
+      }
+    }
     if (t.league) {
       for (const md of t.league.matchdays) {
         if (md.matches.some((m) => m.result !== null)) return true

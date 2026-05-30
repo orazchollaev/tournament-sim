@@ -4,6 +4,7 @@ import type { Team } from "@/modules/teams/types"
 import {
   createTournament,
   createLeague,
+  createMultiTierLeague,
   uid,
   updateThirdPlaceSlots,
   recalcStandings,
@@ -143,6 +144,35 @@ export function useCrudActions(
     return newT.id
   }
 
+  function newMultiTierSeason(id: string, newTierTeamIds: string[][]): string | undefined {
+    const t = tournaments.value.find((t) => t.id === id)
+    if (!t || !t.winnerId || !t.tiers?.length) return
+    const allTeams = getTeams()
+    const season =
+      tournaments.value
+        .filter((tr) => tr.name === t.name)
+        .reduce((max, tr) => Math.max(max, tr.season), 0) + 1
+
+    const tierDefs = t.tiers.map((tier, i) => ({
+      name: tier.name,
+      teams: (newTierTeamIds[i] ?? [])
+        .map((tid) => allTeams.find((tm) => tm.id === tid))
+        .filter(Boolean) as (typeof allTeams)[0][],
+    }))
+
+    const newT = createMultiTierLeague(
+      t.name,
+      tierDefs,
+      season,
+      t.tiers[0].league.legMode,
+      t.promotionCount ?? 1
+    )
+    if (t.tiebreaker) newT.tiebreaker = t.tiebreaker
+    tournaments.value.push(newT)
+    active.value = newT.id
+    return newT.id
+  }
+
   function remove(id: string) {
     tournaments.value = tournaments.value.filter((t) => t.id !== id)
     if (active.value === id) active.value = tournaments.value[0]?.id ?? null
@@ -155,13 +185,25 @@ export function useCrudActions(
   function resetResults(tournamentId: string) {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t) return
-    if (t.format === "league" && t.league) {
-      for (const matchday of t.league.matchdays) {
-        matchday.matches.forEach((m) => (m.result = null))
+    if (t.format === "league") {
+      if (t.tiers?.length) {
+        for (const tier of t.tiers) {
+          for (const matchday of tier.league.matchdays) {
+            matchday.matches.forEach((m) => (m.result = null))
+          }
+          recalcLeagueStandings(tier.league, t.tiebreaker)
+        }
+        t.winnerId = null
+        return
       }
-      recalcLeagueStandings(t.league, t.tiebreaker)
-      t.winnerId = null
-      return
+      if (t.league) {
+        for (const matchday of t.league.matchdays) {
+          matchday.matches.forEach((m) => (m.result = null))
+        }
+        recalcLeagueStandings(t.league, t.tiebreaker)
+        t.winnerId = null
+        return
+      }
     }
     if (t.groups) {
       for (const group of t.groups) {
@@ -191,7 +233,17 @@ export function useCrudActions(
   function isTournamentFinished(tournamentId: string): boolean {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t) return false
-    if (t.format === "league") return !!t.winnerId
+    if (t.format === "league") {
+      if (t.tiers?.length) {
+        return (
+          !!t.winnerId &&
+          t.tiers.every((tier) =>
+            tier.league.matchdays.every((md) => md.matches.every((m) => m.result !== null))
+          )
+        )
+      }
+      return !!t.winnerId
+    }
     if (t.groups) {
       for (const group of t.groups) {
         for (const match of group.matches) {
@@ -217,6 +269,7 @@ export function useCrudActions(
     create,
     createLeagueTournament,
     newSeason,
+    newMultiTierSeason,
     remove,
     getById,
     resetResults,

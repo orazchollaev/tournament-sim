@@ -23,7 +23,12 @@ export {
   allGroupsDone,
   selectWildcards,
 } from "./groups"
-export { createTournament, seedBracketFromGroups, createLeague } from "./tournament"
+export {
+  createTournament,
+  seedBracketFromGroups,
+  createLeague,
+  createMultiTierLeague,
+} from "./tournament"
 export {
   buildLeagueMatchdays,
   recalcLeagueStandings,
@@ -33,4 +38,11 @@ export {
   simulateAllLeague,
   allLeagueDone,
   getLeagueWinner,
+  setTierMatchResult,
+  simulateTierMatch,
+  simulateTierMatchday,
+  simulateAllTier,
+  simulateAllTiers,
+  allTiersDone,
+  getTiersWinner,
 } from "./league"

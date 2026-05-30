@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue"
-import { useRoute } from "vue-router"
+import { useRoute, useRouter } from "vue-router"
 
 import BracketPanel from "@/modules/tournament/components/BracketPanel.vue"
 import GroupStage from "@/modules/tournament/components/GroupStage.vue"
@@ -17,6 +17,7 @@ import { useSettingsStore } from "@/modules/settings/store"
 import { Settings, Trophy, Lock, ArrowLeft, Zap } from "lucide-vue-next"
 
 const route = useRoute()
+const router = useRouter()
 const settings = useSettingsStore()
 
 const {
@@ -45,13 +46,41 @@ const showSeasonModal = ref(false)
 const showManualSeason = ref(false)
 const showSettingsModal = ref(false)
 const showPromotionModal = ref(false)
+const showMultiTierModal = ref(false)
+
+const isMultiTier = computed(() => (tournament.value?.tiers?.length ?? 0) > 1)
+const activeTierIdx = ref(0)
+
+const linkedLeague = computed(() => {
+  const t = tournament.value
+  if (!t?.linkedLeagueId) return undefined
+  return store.getById(t.linkedLeagueId)
+})
+
+const otherLeagues = computed(() =>
+  store.tournaments
+    .filter((t) => t.format === "league" && t.id !== tournament.value?.id)
+    .map((t) => ({ id: t.id, name: t.name, season: t.season }))
+)
 
 function openNewSeason() {
   const t = tournament.value
   if (!t) return
 
-  // League with relegation: show promotion/relegation modal
+  // Multi-tier league new season
+  if (t.format === "league" && isMultiTier.value) {
+    showMultiTierModal.value = true
+    return
+  }
+
+  // Single-tier league with relegation: show promotion/relegation modal
   if (t.format === "league" && (t.relegationCount ?? 0) > 0) {
+    if (t.linkedLeagueId && !linkedLeague.value?.winnerId) {
+      alert(
+        `"${linkedLeague.value?.name ?? "Linked league"}" must finish before starting a new season.`
+      )
+      return
+    }
     showPromotionModal.value = true
     return
   }
@@ -72,7 +101,49 @@ function openNewSeason() {
 
 function handlePromotionConfirm(newTeamIds: string[]) {
   showPromotionModal.value = false
+  const t = tournament.value
+
+  // If linked league exists, also start its new season before navigating
+  if (t?.linkedLeagueId && (t.relegationCount ?? 0) > 0) {
+    const linked = linkedLeague.value
+    if (linked?.league && linked.winnerId) {
+      const relegationCount = t.relegationCount!
+      const relegatedIds = t
+        .league!.standings.slice(t.league!.standings.length - relegationCount)
+        .map((s) => s.teamId)
+      const survivingL2Ids = linked.league.standings.slice(relegationCount).map((s) => s.teamId)
+      store.newSeason(t.linkedLeagueId, false, undefined, undefined, undefined, undefined, [
+        ...survivingL2Ids,
+        ...relegatedIds,
+      ])
+    }
+  }
+
   startNewLeagueSeason(newTeamIds)
+}
+
+function handleMultiTierSeasonConfirm() {
+  showMultiTierModal.value = false
+  const t = tournament.value
+  if (!t?.tiers) return
+  const promotionCount = t.promotionCount ?? 1
+  // Compute new tier team IDs after swaps between adjacent tiers
+  const newTierTeamIds: string[][] = t.tiers.map((tier) => [...tier.teamIds])
+  for (let i = 0; i < t.tiers.length - 1; i++) {
+    const upper = t.tiers[i].league.standings
+    const lower = t.tiers[i + 1].league.standings
+    const relegated = upper.slice(upper.length - promotionCount).map((s) => s.teamId)
+    const promoted = lower.slice(0, promotionCount).map((s) => s.teamId)
+    // Upper tier: remove relegated, add promoted
+    newTierTeamIds[i] = [
+      ...upper.slice(0, upper.length - promotionCount).map((s) => s.teamId),
+      ...promoted,
+    ]
+    // Lower tier: remove promoted, add relegated
+    newTierTeamIds[i + 1] = [...lower.slice(promotionCount).map((s) => s.teamId), ...relegated]
+  }
+  const id = store.newMultiTierSeason(t.id, newTierTeamIds)
+  if (id) router.push(`/tournaments/${id}`)
 }
 
 type MainTab = "groups" | "bracket" | "league" | "stats" | "participants"
@@ -186,15 +257,33 @@ function closeSeasonModal() {
       </div>
 
       <div class="phase-tabs">
-        <!-- League format: tek sekme -->
+        <!-- League format -->
         <template v-if="isLeagueFormat">
-          <button
-            class="phase-tab"
-            :class="{ active: activeTab === 'league' }"
-            @click="activeTab = 'league'"
-          >
-            Table
-          </button>
+          <!-- Multi-tier: bir tab per tier -->
+          <template v-if="isMultiTier">
+            <button
+              v-for="(tier, ti) in tournament.tiers"
+              :key="ti"
+              class="phase-tab"
+              :class="{ active: activeTab === 'league' && activeTierIdx === ti }"
+              @click="
+                activeTab = 'league'
+                activeTierIdx = ti
+              "
+            >
+              {{ tier.name }}
+            </button>
+          </template>
+          <!-- Single-tier -->
+          <template v-else>
+            <button
+              class="phase-tab"
+              :class="{ active: activeTab === 'league' }"
+              @click="activeTab = 'league'"
+            >
+              Table
+            </button>
+          </template>
         </template>
         <!-- Groups + Bracket format -->
         <template v-else-if="isGroupFormat">
@@ -246,14 +335,38 @@ function closeSeasonModal() {
       <Transition name="tab" mode="out-in">
         <div v-if="activeTab === 'league'" key="league" class="section-box">
           <div class="section-body">
-            <LeagueView
-              :tournament="tournament"
-              :teams="allTeams"
-              @set-result="(mdi, mi, h, a) => store.setLeagueResult(tournament!.id, mdi, mi, h, a)"
-              @sim-match="(mdi, mi) => store.simLeagueMatch(tournament!.id, mdi, mi)"
-              @sim-matchday="(mdi) => store.simLeagueMatchday(tournament!.id, mdi)"
-              @sim-all="store.simAllLeague(tournament!.id)"
-            />
+            <!-- Multi-tier mode -->
+            <template v-if="isMultiTier && tournament.tiers">
+              <LeagueView
+                :tournament="tournament"
+                :teams="allTeams"
+                :league-override="tournament.tiers[activeTierIdx]?.league"
+                :relegation-count-override="
+                  activeTierIdx < tournament.tiers.length - 1 ? (tournament.promotionCount ?? 0) : 0
+                "
+                :promotion-count="activeTierIdx > 0 ? (tournament.promotionCount ?? 0) : 0"
+                @set-result="
+                  (mdi, mi, h, a) =>
+                    store.setTierResult(tournament!.id, activeTierIdx, mdi, mi, h, a)
+                "
+                @sim-match="(mdi, mi) => store.simTierMatch(tournament!.id, activeTierIdx, mdi, mi)"
+                @sim-matchday="(mdi) => store.simTierMatchday(tournament!.id, activeTierIdx, mdi)"
+                @sim-all="store.simAllTier(tournament!.id, activeTierIdx)"
+              />
+            </template>
+            <!-- Single-tier mode -->
+            <template v-else>
+              <LeagueView
+                :tournament="tournament"
+                :teams="allTeams"
+                @set-result="
+                  (mdi, mi, h, a) => store.setLeagueResult(tournament!.id, mdi, mi, h, a)
+                "
+                @sim-match="(mdi, mi) => store.simLeagueMatch(tournament!.id, mdi, mi)"
+                @sim-matchday="(mdi) => store.simLeagueMatchday(tournament!.id, mdi)"
+                @sim-all="store.simAllLeague(tournament!.id)"
+              />
+            </template>
           </div>
         </div>
         <div v-else-if="activeTab === 'groups'" key="groups" class="section-box">
@@ -295,6 +408,7 @@ function closeSeasonModal() {
       :all-teams="allTeams"
       :has-any-results="hasAnyResults"
       :available-teams="availableTeams"
+      :other-leagues="otherLeagues"
       @add-team="addTeam"
       @remove-team="removeTeam"
       @redraw="redrawTournament"
@@ -306,6 +420,7 @@ function closeSeasonModal() {
       @change-leg-mode="changeLegMode"
       @set-league-leg-mode="store.setLeagueLegMode(tournament!.id, $event)"
       @change-relegation-count="store.setRelegationCount(tournament!.id, $event)"
+      @set-linked-league="store.setLinkedLeague(tournament!.id, $event)"
       @change-tiebreaker="store.setTiebreaker(tournament!.id, $event)"
       @reset="resetTournament"
       @delete="deleteTournament"
@@ -320,9 +435,70 @@ function closeSeasonModal() {
       :all-teams="allTeams"
       :available-teams="availableTeams"
       :relegation-count="tournament.relegationCount ?? 0"
+      :linked-league="
+        linkedLeague?.league
+          ? { name: linkedLeague.name, standings: linkedLeague.league.standings }
+          : undefined
+      "
       @confirm="handlePromotionConfirm"
       @cancel="showPromotionModal = false"
     />
+
+    <!-- Multi-tier new season confirmation modal -->
+    <AppModal
+      v-if="showMultiTierModal && tournament?.tiers"
+      :title="`New Season — ${tournament.name}`"
+      :width="'min(520px, calc(100vw - 32px))'"
+      @close="showMultiTierModal = false"
+    >
+      <div class="mt-modal-body">
+        <div v-for="(tier, ti) in tournament.tiers" :key="ti" class="mt-tier-block">
+          <div class="mt-tier-title">{{ tier.name }}</div>
+          <div class="mt-tier-rows">
+            <div
+              v-for="(row, rank) in tier.league.standings"
+              :key="row.teamId"
+              class="mt-tier-row"
+              :class="{
+                'mt-row--promoted': ti > 0 && rank < (tournament.promotionCount ?? 0),
+                'mt-row--relegated':
+                  ti < tournament.tiers!.length - 1 &&
+                  rank >= tier.league.standings.length - (tournament.promotionCount ?? 0),
+              }"
+            >
+              <span class="mt-rank">{{ rank + 1 }}</span>
+              <span
+                class="mt-dot"
+                :style="{ background: allTeams.find((t) => t.id === row.teamId)?.color ?? '#888' }"
+              />
+              <span class="mt-name">
+                {{ allTeams.find((t) => t.id === row.teamId)?.name ?? row.teamId }}
+              </span>
+              <span class="mt-pts">{{ row.pts }} pts</span>
+              <span
+                v-if="ti > 0 && rank < (tournament.promotionCount ?? 0)"
+                class="mt-badge mt-badge--up"
+              >
+                ↑ Up
+              </span>
+              <span
+                v-else-if="
+                  ti < tournament.tiers!.length - 1 &&
+                  rank >= tier.league.standings.length - (tournament.promotionCount ?? 0)
+                "
+                class="mt-badge mt-badge--down"
+              >
+                ↓ Down
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <button class="primary" @click="handleMultiTierSeasonConfirm">Start New Season →</button>
+        <button @click="showMultiTierModal = false">Cancel</button>
+      </template>
+    </AppModal>
 
     <AppModal
       v-if="showSeasonModal"
@@ -414,6 +590,89 @@ function closeSeasonModal() {
 }
 .gs-body {
   padding: 8px 0;
+}
+
+.mt-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+.mt-tier-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mt-tier-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.mt-tier-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.mt-tier-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+}
+.mt-row--promoted {
+  border-color: color-mix(in srgb, #22c55e 35%, transparent);
+  background: color-mix(in srgb, #22c55e 4%, var(--surface));
+}
+.mt-row--relegated {
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 4%, var(--surface));
+}
+.mt-rank {
+  width: 18px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.mt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mt-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mt-pts {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.mt-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.mt-badge--up {
+  color: #22c55e;
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+}
+.mt-badge--down {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
 }
 
 @media (max-width: 600px) {

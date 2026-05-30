@@ -12,6 +12,10 @@ const props = defineProps<{
   allTeams: Team[]
   availableTeams: Team[]
   relegationCount: number
+  linkedLeague?: {
+    name: string
+    standings: GroupStanding[]
+  }
 }>()
 
 const emit = defineEmits<{
@@ -35,7 +39,14 @@ const relegatedTeams = computed(
       .filter(Boolean) as Team[]
 )
 
-// Pre-fill incoming slots with best available teams by power
+// Linked league: top N are auto-promoted
+const linkedPromotedIds = computed(() =>
+  props.linkedLeague
+    ? props.linkedLeague.standings.slice(0, props.relegationCount).map((s) => s.teamId)
+    : []
+)
+
+// Manual selection (when no linked league)
 const sortedAvailable = computed(() => [...props.availableTeams].sort((a, b) => b.power - a.power))
 
 const incomingIds = ref<string[]>(
@@ -48,8 +59,12 @@ function selectableFor(slotIdx: number): Team[] {
 }
 
 function handleConfirm() {
-  const incoming = incomingIds.value.filter((id) => id !== "")
-  emit("confirm", [...survivingIds.value, ...incoming])
+  if (props.linkedLeague) {
+    emit("confirm", [...survivingIds.value, ...linkedPromotedIds.value])
+  } else {
+    const incoming = incomingIds.value.filter((id) => id !== "")
+    emit("confirm", [...survivingIds.value, ...incoming])
+  }
 }
 </script>
 
@@ -78,8 +93,35 @@ function handleConfirm() {
         </div>
       </div>
 
-      <!-- Incoming teams -->
-      <template v-if="relegationCount > 0">
+      <!-- Linked league: auto-promoted teams -->
+      <template v-if="linkedLeague && relegationCount > 0">
+        <div class="pm-section-title pm-section-title--in">
+          <ArrowUp :size="12" />
+          Promoted from {{ linkedLeague.name }}
+        </div>
+        <div class="pm-standings">
+          <div
+            v-for="(row, rank) in linkedLeague.standings.slice(0, relegationCount)"
+            :key="row.teamId"
+            class="pm-row pm-row--promoted"
+          >
+            <span class="pm-rank">{{ rank + 1 }}</span>
+            <span class="pm-dot" :style="{ background: teamById(row.teamId)?.color ?? '#888' }" />
+            <span class="pm-name">{{ teamById(row.teamId)?.name ?? row.teamId }}</span>
+            <span class="pm-pts">{{ row.pts }} pts</span>
+            <span class="pm-badge pm-badge--in">
+              <ArrowUp :size="10" />
+              Promoted
+            </span>
+          </div>
+        </div>
+        <div class="pm-linked-note">
+          Bottom {{ relegationCount }} of {{ linkedLeague.name }} will receive the relegated teams.
+        </div>
+      </template>
+
+      <!-- No linked league: manual incoming slots -->
+      <template v-else-if="relegationCount > 0">
         <div class="pm-section-title pm-section-title--in">
           <ArrowUp :size="12" />
           Incoming Teams ({{ relegationCount }} slot{{ relegationCount > 1 ? "s" : "" }})
@@ -162,6 +204,20 @@ function handleConfirm() {
 .pm-row--relegated:last-of-type {
   border-radius: 0 0 var(--radius) var(--radius);
 }
+.pm-row--promoted {
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+.pm-row--promoted + .pm-row--promoted {
+  border-top-color: transparent;
+  border-radius: 0;
+}
+.pm-row--promoted:first-of-type {
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.pm-row--promoted:last-of-type {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
 
 .pm-rank {
   width: 18px;
@@ -201,6 +257,19 @@ function handleConfirm() {
 .pm-badge--out {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.pm-badge--in {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.pm-linked-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
 }
 
 .pm-empty {
