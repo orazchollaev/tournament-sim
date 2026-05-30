@@ -31,13 +31,13 @@ const survivingIds = computed(() =>
   props.standings.slice(0, props.standings.length - props.relegationCount).map((s) => s.teamId)
 )
 
-const relegatedTeams = computed(
-  () =>
-    props.standings
-      .slice(props.standings.length - props.relegationCount)
-      .map((s) => teamById(s.teamId))
-      .filter(Boolean) as Team[]
-)
+// const relegatedTeams = computed(
+//   () =>
+//     props.standings
+//       .slice(props.standings.length - props.relegationCount)
+//       .map((s) => teamById(s.teamId))
+//       .filter(Boolean) as Team[]
+// )
 
 // Linked league: top N are auto-promoted
 const linkedPromotedIds = computed(() =>
