@@ -28,6 +28,7 @@ const emit = defineEmits<{
   toggleThirdPlace: []
   changeLegMode: [stage: "group" | "knockout" | "final", mode: LegMode]
   setLeagueLegMode: [mode: LegMode]
+  changeRelegationCount: [count: number]
   changeTiebreaker: [tiebreaker: Tiebreaker]
   reset: []
   delete: []
@@ -54,6 +55,7 @@ const localGroupLegMode = ref<LegMode>(props.tournament.groupLegMode ?? "single"
 const localKnockoutLegMode = ref<LegMode>(props.tournament.knockoutLegMode ?? "single")
 const localFinalLegMode = ref<LegMode>(props.tournament.finalLegMode ?? "single")
 const localLeagueLegMode = ref<LegMode>(props.tournament.league?.legMode ?? "single")
+const localRelegationCount = ref(props.tournament.relegationCount ?? 0)
 const localTiebreaker = ref<Tiebreaker>(props.tournament.tiebreaker ?? "goal-diff")
 const isLeagueFormat = computed(() => props.tournament.format === "league")
 
@@ -99,6 +101,8 @@ const hasChanges = computed(() => {
   if (localKnockoutLegMode.value !== (orig.knockoutLegMode ?? "single")) return true
   if (localFinalLegMode.value !== (orig.finalLegMode ?? "single")) return true
   if (isLeagueFormat.value && localLeagueLegMode.value !== (orig.league?.legMode ?? "single"))
+    return true
+  if (isLeagueFormat.value && localRelegationCount.value !== (orig.relegationCount ?? 0))
     return true
   if (localTiebreaker.value !== (orig.tiebreaker ?? "goal-diff")) return true
   return false
@@ -189,6 +193,11 @@ function handleSave() {
   // League leg mode
   if (isLeagueFormat.value && localLeagueLegMode.value !== (orig.league?.legMode ?? "single")) {
     emit("setLeagueLegMode", localLeagueLegMode.value)
+  }
+
+  // Relegation count
+  if (isLeagueFormat.value && localRelegationCount.value !== (orig.relegationCount ?? 0)) {
+    emit("changeRelegationCount", localRelegationCount.value)
   }
 
   // Tiebreaker
@@ -499,6 +508,31 @@ function handleSave() {
           <div v-else class="ts-locked-banner">
             <Lock :size="12" />
             Format cannot be changed after matches have started.
+          </div>
+          <div class="ts-stepper-row" style="margin-top: 10px">
+            <span class="ts-stepper-label">Relegation Zone</span>
+            <div class="gc-stepper">
+              <button
+                :disabled="localRelegationCount <= 0"
+                @click="localRelegationCount = Math.max(0, localRelegationCount - 1)"
+              >
+                −
+              </button>
+              <span class="gc-val">{{ localRelegationCount }}</span>
+              <button
+                :disabled="localRelegationCount >= localTeamIds.length - 1"
+                @click="
+                  localRelegationCount = Math.min(localTeamIds.length - 1, localRelegationCount + 1)
+                "
+              >
+                +
+              </button>
+            </div>
+            <span class="ts-hint">
+              {{
+                localRelegationCount === 0 ? "disabled" : `bottom ${localRelegationCount} relegated`
+              }}
+            </span>
           </div>
         </div>
       </template>

@@ -19,6 +19,15 @@ const emit = defineEmits<{
 const league = computed(() => props.tournament.league!)
 const matchdays = computed(() => league.value.matchdays)
 const standings = computed(() => league.value.standings)
+const relegationCount = computed(() => props.tournament.relegationCount ?? 0)
+
+function isRelegated(rank: number) {
+  return relegationCount.value > 0 && rank >= standings.value.length - relegationCount.value
+}
+
+function isFirstRelegated(rank: number) {
+  return relegationCount.value > 0 && rank === standings.value.length - relegationCount.value
+}
 
 function firstUnplayedIdx() {
   const idx = matchdays.value.findIndex((md) => md.matches.some((m) => !m.result))
@@ -132,6 +141,8 @@ function handleSimMatchday(idx: number) {
                   'lv-pos--2': rank === 1,
                   'lv-pos--3': rank === 2,
                   'lv-pos--4': rank === 3,
+                  'lv-pos--relegated': isRelegated(rank),
+                  'lv-pos--relegated-first': isFirstRelegated(rank),
                 }"
               >
                 <td class="col-rank">
@@ -441,6 +452,16 @@ function handleSimMatchday(idx: number) {
 .lv-pos--4 .col-rank {
   color: #22c55e !important;
   font-weight: 600;
+}
+.lv-pos--relegated td:first-child {
+  border-left: 3px solid var(--danger);
+}
+.lv-pos--relegated .col-rank {
+  color: var(--danger) !important;
+  font-weight: 600;
+}
+.lv-pos--relegated-first td {
+  border-top: 1px dashed color-mix(in srgb, var(--danger) 40%, transparent);
 }
 .gd-pos {
   color: color-mix(in srgb, var(--accent) 80%, var(--text));

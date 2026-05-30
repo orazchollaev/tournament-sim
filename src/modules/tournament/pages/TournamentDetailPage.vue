@@ -10,6 +10,7 @@ import ManualDraw from "@/modules/tournament/components/ManualDraw.vue"
 import GroupDraw from "@/modules/tournament/components/GroupDraw.vue"
 import TournamentSettings from "@/modules/tournament/components/TournamentSettings.vue"
 import TournamentStats from "@/modules/tournament/components/TournamentStats.vue"
+import PromotionModal from "@/modules/tournament/components/PromotionModal.vue"
 import AppModal from "@/components/AppModal.vue"
 import { useTournamentDetail } from "../composables/useTournamentDetail"
 import { useSettingsStore } from "@/modules/settings/store"
@@ -27,6 +28,7 @@ const {
   deleteTournament,
   resetTournament,
   startNewSeason,
+  startNewLeagueSeason,
   hasAnyResults,
   availableTeams,
   addTeam,
@@ -42,12 +44,22 @@ const {
 const showSeasonModal = ref(false)
 const showManualSeason = ref(false)
 const showSettingsModal = ref(false)
+const showPromotionModal = ref(false)
 
 function openNewSeason() {
-  const isGroup = tournament.value?.format === "group+bracket"
+  const t = tournament.value
+  if (!t) return
+
+  // League with relegation: show promotion/relegation modal
+  if (t.format === "league" && (t.relegationCount ?? 0) > 0) {
+    showPromotionModal.value = true
+    return
+  }
+
+  const isGroup = t.format === "group+bracket"
   const drawType = isGroup ? settings.newSeasonGroupDrawType : settings.newSeasonDrawType
   const playoffSeedMode = isGroup ? settings.newSeasonPlayoffSeedMode : undefined
-  const thirdPlace = tournament.value?.hasThirdPlace ?? false
+  const thirdPlace = t.hasThirdPlace ?? false
   if (drawType === "random") {
     startNewSeason(false, undefined, thirdPlace, playoffSeedMode)
   } else if (drawType === "seeded") {
@@ -56,6 +68,11 @@ function openNewSeason() {
     showManualSeason.value = true
     showSeasonModal.value = true
   }
+}
+
+function handlePromotionConfirm(newTeamIds: string[]) {
+  showPromotionModal.value = false
+  startNewLeagueSeason(newTeamIds)
 }
 
 type MainTab = "groups" | "bracket" | "league" | "stats" | "participants"
@@ -288,10 +305,23 @@ function closeSeasonModal() {
       @set-playoff-seed-mode="setPlayoffSeedMode"
       @change-leg-mode="changeLegMode"
       @set-league-leg-mode="store.setLeagueLegMode(tournament!.id, $event)"
+      @change-relegation-count="store.setRelegationCount(tournament!.id, $event)"
       @change-tiebreaker="store.setTiebreaker(tournament!.id, $event)"
       @reset="resetTournament"
       @delete="deleteTournament"
       @close="showSettingsModal = false"
+    />
+
+    <PromotionModal
+      v-if="showPromotionModal && tournament"
+      :tournament-name="tournament.name"
+      :season="tournament.season"
+      :standings="tournament.league?.standings ?? []"
+      :all-teams="allTeams"
+      :available-teams="availableTeams"
+      :relegation-count="tournament.relegationCount ?? 0"
+      @confirm="handlePromotionConfirm"
+      @cancel="showPromotionModal = false"
     />
 
     <AppModal

@@ -87,7 +87,8 @@ export function useCrudActions(
     orderedIds?: string[],
     groupCount?: number,
     withThirdPlace?: boolean,
-    playoffSeedMode?: PlayoffSeedMode
+    playoffSeedMode?: PlayoffSeedMode,
+    overrideTeamIds?: string[]
   ): string | undefined {
     const t = tournaments.value.find((t) => t.id === id)
     if (!t || !t.winnerId) return
@@ -100,7 +101,11 @@ export function useCrudActions(
 
     // League new season
     if (t.format === "league") {
-      const newT = createLeague(t.name, selected, season, t.league?.legMode ?? "single")
+      const teamIds = overrideTeamIds ?? t.teamIds
+      const leagueTeams = allTeams.filter((tm) => teamIds.includes(tm.id))
+      const newT = createLeague(t.name, leagueTeams, season, t.league?.legMode ?? "single")
+      if (t.tiebreaker) newT.tiebreaker = t.tiebreaker
+      if (t.relegationCount) newT.relegationCount = t.relegationCount
       tournaments.value.push(newT)
       active.value = newT.id
       return newT.id

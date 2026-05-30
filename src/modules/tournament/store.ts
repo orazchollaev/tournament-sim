@@ -26,6 +26,12 @@ export const useTournamentStore = defineStore("tournament", () => {
   const draw = useDrawActions(tournaments, getTeams)
   const leagueActions = useLeagueActions(tournaments, getTeams)
 
+  function setRelegationCount(tournamentId: string, count: number) {
+    const t = tournaments.value.find((t) => t.id === tournamentId)
+    if (!t) return
+    t.relegationCount = Math.max(0, count)
+  }
+
   function setTiebreaker(tournamentId: string, tiebreaker: Tiebreaker) {
     const t = tournaments.value.find((t) => t.id === tournamentId)
     if (!t) return
@@ -62,5 +68,6 @@ export const useTournamentStore = defineStore("tournament", () => {
     ...leagueActions,
     simulateTournament,
     setTiebreaker,
+    setRelegationCount,
   }
 })

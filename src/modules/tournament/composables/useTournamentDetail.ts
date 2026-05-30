@@ -50,6 +50,19 @@ export function useTournamentDetail() {
     if (id) router.push(`/tournaments/${id}`)
   }
 
+  function startNewLeagueSeason(newTeamIds: string[]) {
+    const id = store.newSeason(
+      route.params.id as string,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      newTeamIds
+    )
+    if (id) router.push(`/tournaments/${id}`)
+  }
+
   const tournamentId = computed(() => route.params.id as string)
 
   const hasAnyResults = computed(() => store.hasAnyResults(tournamentId.value))
@@ -137,6 +150,7 @@ export function useTournamentDetail() {
     deleteTournament,
     resetTournament,
     startNewSeason,
+    startNewLeagueSeason,
     hasAnyResults,
     availableTeams,
     addTeam,

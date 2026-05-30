@@ -102,5 +102,8 @@ export interface Tournament {
   // wildcard slots: best N teams at rank `qualifiersPerGroup` across all groups
   wildcardCount?: number
 
+  // league promotion/relegation: how many bottom teams swap out each new season
+  relegationCount?: number
+
   createdAt: number
 }

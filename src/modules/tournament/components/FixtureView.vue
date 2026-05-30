@@ -201,9 +201,9 @@ function legWinner(result: MatchResult | null | undefined, side: "home" | "away"
 function aggLabel(match: FlatMatch): string {
   if (!match.result || !match.leg2Result) return null as unknown as string
   const h = match.result.home + match.leg2Result.away
-  const hPen = (match.result?.penHome || 0) + (match.leg2Result?.penHome || 0)
+  const hPen = (match.result?.penAway || 0) + (match.leg2Result?.penAway || 0)
   const a = match.result.away + match.leg2Result.home
-  const aPen = (match.result?.penAway || 0) + (match.leg2Result?.penAway || 0)
+  const aPen = (match.result?.penHome || 0) + (match.leg2Result?.penHome || 0)
 
   if (hPen || aPen) {
     return `${h + hPen} – ${a + aPen} with penalties`
