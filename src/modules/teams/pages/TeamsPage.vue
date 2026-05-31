@@ -4,7 +4,7 @@ import { useRouter } from "vue-router"
 import { useTeamsStore } from "../store"
 import TeamFormModal from "../components/TeamFormModal.vue"
 import type { Team } from "../types"
-import { X, Pencil, Search, ChevronRight } from "lucide-vue-next"
+import { X, Pencil, Search, ChevronRight } from "@lucide/vue"
 import { MAX_TEAMS } from "@/constants"
 
 const store = useTeamsStore()

@@ -5,7 +5,7 @@ import type { Team } from "@/modules/teams/types"
 import TeamBadge from "@/modules/teams/components/TeamBadge.vue"
 import BracketMatchCard from "./BracketMatchCard.vue"
 import { getWinnerId } from "@/engine"
-import { Shuffle, X, Check, Pencil } from "lucide-vue-next"
+import { Shuffle, X, Check, Pencil } from "@lucide/vue"
 
 const props = defineProps<{ tournament: Tournament; teams: Team[] }>()
 const emit = defineEmits<{

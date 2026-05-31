@@ -6,7 +6,7 @@ import { useTournamentStore } from "@/modules/tournament/store"
 import { getWinnerId } from "@/engine"
 import { useTeamLookup } from "@/composables/useTeamLookup"
 import type { Match } from "@/modules/tournament/types"
-import { Trophy, ArrowLeft } from "lucide-vue-next"
+import { Trophy, ArrowLeft } from "@lucide/vue"
 import SeasonChart from "../components/SeasonChart.vue"
 
 const route = useRoute()

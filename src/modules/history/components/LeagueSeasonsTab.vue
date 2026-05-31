@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trophy } from "lucide-vue-next"
+import { Trophy } from "@lucide/vue"
 
 export interface LeagueSeasonEntry {
   season: number

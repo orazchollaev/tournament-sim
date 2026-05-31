@@ -5,7 +5,7 @@ import type { Tournament, GroupMatch } from "@/modules/tournament/types"
 import AppModal from "@/components/AppModal.vue"
 import { useTeamLookup } from "@/composables/useTeamLookup"
 import TeamNameAuto from "@/modules/teams/components/TeamNameAuto.vue"
-import { Lock, Shuffle, Check } from "lucide-vue-next"
+import { Lock, Shuffle, Check } from "@lucide/vue"
 
 const props = defineProps<{
   tournament: Tournament

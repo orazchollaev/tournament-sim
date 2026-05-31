@@ -2,7 +2,7 @@
 import { computed } from "vue"
 import { useRouter } from "vue-router"
 import { useTournamentStore } from "@/modules/tournament/store"
-import { ChevronRight } from "lucide-vue-next"
+import { ChevronRight } from "@lucide/vue"
 
 const router = useRouter()
 const store = useTournamentStore()

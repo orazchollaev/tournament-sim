@@ -6,7 +6,7 @@ import { getWinnerId } from "@/engine"
 import { teamAbbr } from "@/composables/useTeamLookup"
 import TeamNameAuto from "@/modules/teams/components/TeamNameAuto.vue"
 import { useSettingsStore } from "@/modules/settings/store"
-import { X, Shuffle, Pencil, Check } from "lucide-vue-next"
+import { X, Shuffle, Pencil, Check } from "@lucide/vue"
 
 const settings = useSettingsStore()
 

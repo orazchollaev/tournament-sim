@@ -6,7 +6,7 @@ import { useTeamsStore } from "../../teams/store"
 import { useTournamentStore } from "../../tournament/store"
 import { version } from "../../../../package.json"
 import BtnGroup from "@/components/BtnGroup.vue"
-import { ArrowLeft } from "lucide-vue-next"
+import { ArrowLeft } from "@lucide/vue"
 import { computed } from "vue"
 import { showAlert, showConfirm } from "@/composables/useDialog"
 

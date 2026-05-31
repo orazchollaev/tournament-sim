@@ -8,7 +8,7 @@ import ManualDraw from "./ManualDraw.vue"
 import GroupDraw from "./GroupDraw.vue"
 import BtnGroup from "@/components/BtnGroup.vue"
 import AppModal from "@/components/AppModal.vue"
-import { Trophy, LayoutGrid, List, Shuffle } from "lucide-vue-next"
+import { Trophy, LayoutGrid, List, Shuffle } from "@lucide/vue"
 import { randomTournamentName } from "@/composables/useRandomNames"
 import type { LegMode, PlayoffSeedMode, Tiebreaker } from "@/modules/tournament/types"
 

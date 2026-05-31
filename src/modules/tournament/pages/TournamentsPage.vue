@@ -5,7 +5,7 @@ import { useTeamsStore } from "@/modules/teams/store"
 import { useTournamentStore } from "@/modules/tournament/store"
 import CreateTournamentModal from "../components/CreateTournamentModal.vue"
 import type { Tournament } from "../types"
-import { Trophy, X, Search, ChevronRight } from "lucide-vue-next"
+import { Trophy, X, Search, ChevronRight } from "@lucide/vue"
 import { showConfirm } from "@/composables/useDialog"
 
 const router = useRouter()

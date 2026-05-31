@@ -2,7 +2,7 @@
 import { ref, computed, watch, nextTick } from "vue"
 import type { League, Tournament } from "@/modules/tournament/types"
 import type { Team } from "@/modules/teams/types"
-import { Zap, ChevronLeft, ChevronRight } from "lucide-vue-next"
+import { Zap, ChevronLeft, ChevronRight } from "@lucide/vue"
 
 const props = defineProps<{
   tournament: Tournament

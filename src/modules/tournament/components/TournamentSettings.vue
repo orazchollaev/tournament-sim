@@ -6,7 +6,7 @@ import ManualDraw from "@/modules/tournament/components/ManualDraw.vue"
 import GroupDraw from "@/modules/tournament/components/GroupDraw.vue"
 import BtnGroup from "@/components/BtnGroup.vue"
 import AppModal from "@/components/AppModal.vue"
-import { Settings, X, Lock, Save } from "lucide-vue-next"
+import { Settings, X, Lock, Save } from "@lucide/vue"
 import { showConfirm } from "@/composables/useDialog"
 
 type DrawType = "random" | "seeded" | "manual"

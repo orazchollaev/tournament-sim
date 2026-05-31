@@ -14,7 +14,7 @@ import PromotionModal from "@/modules/tournament/components/PromotionModal.vue"
 import AppModal from "@/components/AppModal.vue"
 import { useTournamentDetail } from "../composables/useTournamentDetail"
 import { useSettingsStore } from "@/modules/settings/store"
-import { Settings, Trophy, Lock, ArrowLeft, Zap } from "lucide-vue-next"
+import { Settings, Trophy, Lock, ArrowLeft, Zap } from "@lucide/vue"
 import { showAlert } from "@/composables/useDialog"
 
 const route = useRoute()

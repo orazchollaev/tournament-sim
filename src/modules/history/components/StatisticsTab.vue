@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Zap, Shield, Flame, Star, Trophy } from "lucide-vue-next"
+import { Zap, Shield, Flame, Star, Trophy } from "@lucide/vue"
 
 export interface BiggestWin {
   score: string

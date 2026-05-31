@@ -3,7 +3,7 @@ import { computed, ref } from "vue"
 import type { GroupStanding } from "@/modules/tournament/types"
 import type { Team } from "@/modules/teams/types"
 import AppModal from "@/components/AppModal.vue"
-import { ArrowDown, ArrowUp } from "lucide-vue-next"
+import { ArrowDown, ArrowUp } from "@lucide/vue"
 
 const props = defineProps<{
   tournamentName: string

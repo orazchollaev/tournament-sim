@@ -4,7 +4,7 @@ import type { Match } from "../types"
 import type { Team } from "@/modules/teams/types"
 import TeamBadge from "@/modules/teams/components/TeamBadge.vue"
 import { getWinnerId } from "@/engine"
-import { Pencil, Shuffle, X, Check } from "lucide-vue-next"
+import { Pencil, Shuffle, X, Check } from "@lucide/vue"
 
 const props = defineProps<{
   match: Match & { _origRound: number; _origMatch: number }

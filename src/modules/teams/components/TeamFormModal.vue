@@ -6,7 +6,7 @@ import { useTeamsStore } from "../store"
 import { useModal } from "@/composables/useModal"
 import { autoAbbr } from "@/composables/useTeamLookup"
 import { randomTeamName } from "@/composables/useRandomNames"
-import { Shuffle } from "lucide-vue-next"
+import { Shuffle } from "@lucide/vue"
 import type { Team } from "../types"
 
 const props = defineProps<{ team?: Team }>()

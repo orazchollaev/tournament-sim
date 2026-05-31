@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { ChevronDown, ChevronRight, Trophy } from "lucide-vue-next"
+import { ChevronDown, ChevronRight, Trophy } from "@lucide/vue"
 
 export interface TeamSeasonRow {
   season: number

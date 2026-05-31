@@ -5,7 +5,7 @@ import type { Team } from "@/modules/teams/types"
 import Bracket from "./Bracket.vue"
 import FixtureView from "./FixtureView.vue"
 import { useTournamentStore } from "../store"
-import { Maximize2, Minus, Plus, Shuffle, X, Download } from "lucide-vue-next"
+import { Maximize2, Minus, Plus, Shuffle, X, Download } from "@lucide/vue"
 import { toPng } from "html-to-image"
 
 const props = defineProps<{

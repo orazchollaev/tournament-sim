@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppLogoWordmark from "./AppLogoWordmark.vue"
-import { Settings, Star, Github, Trophy, History, RefreshCw } from "lucide-vue-next"
+import { Settings, Star, Trophy, History, RefreshCw, FolderGit2 } from "@lucide/vue"
 import { useSettingsStore } from "@/modules/settings/store"
 import { usePwaUpdate } from "@/composables/usePwaUpdate"
 
@@ -53,7 +53,7 @@ const { needRefresh, applyUpdate } = usePwaUpdate()
           class="github-star-btn"
           title="Star on GitHub"
         >
-          <Github :size="15" />
+          <FolderGit2 :size="15" />
           <span class="github-star-label">Star</span>
           <Star :size="12" class="github-star-icon" />
         </a>

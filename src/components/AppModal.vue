@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue"
-import { X } from "lucide-vue-next"
+import { X } from "@lucide/vue"
 
 withDefaults(
   defineProps<{
